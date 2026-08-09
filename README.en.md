@@ -99,6 +99,8 @@ python scripts/tg.py status       # character / garden / tier
 python scripts/tg.py dashboard    # four-asset dashboard (gold/oil/CSI300/Nasdaq)
 python scripts/tg.py plan         # today's strategy plan (Zhongyong)
 python scripts/tg.py reconcile    # discipline reconciliation (plan vs diary)
+python scripts/tg.py quests       # quest list (daily + weekly, +XP)
+python scripts/tg.py stats        # discipline trend stats (score vs red flags)
 ```
 
 Demo output (the day with discipline issues):

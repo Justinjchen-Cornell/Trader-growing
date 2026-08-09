@@ -13,10 +13,10 @@
 - [x] 对接中庸策略 plan.py（计划 JSON）—— `strategy_bridge.py`
 - [x] 对接修行日记 Skill（diary JSON）—— `journal_bridge.py`
 
-## V1.5 —— 幼苗
-- [ ] 图鉴系统（书中知识条目收集：回测 / 过拟合 / 夏普 / 卡玛 / IC...）
-- [ ] 每周因子实验任务（第 9 章流程）
-- [ ] 偏差趋势统计（连击 vs 偏差的相关性）
+## V1.5 —— 幼苗 ✅
+- [x] 图鉴系统（24 个书中知识条目，打卡天数驱动解锁）—— `bestiary.py`
+- [x] 每周任务（因子实验 / 参数研究 / 回测复现，+30 XP）—— `quests.py`
+- [x] 偏差趋势统计（纪律分 vs 红牌的 Spearman 相关）—— `stats.py`
 
 ## V2.0 —— 小树
 - [ ] Streamlit Web 界面（花园可视化 + 成长曲线）

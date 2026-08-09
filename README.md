@@ -98,6 +98,8 @@ python scripts/tg.py status       # 角色 / 花园 / 层级
 python scripts/tg.py dashboard    # 四资产看板（金/油/沪深300/纳指）
 python scripts/tg.py plan         # 今日策略计划（中庸策略）
 python scripts/tg.py reconcile    # 纪律对账（计划 vs 日记）
+python scripts/tg.py quests       # 任务清单（每日 + 每周，+XP）
+python scripts/tg.py stats        # 偏差趋势统计（纪律分 vs 红牌）
 ```
 
 Demo 输出示例（有纪律偏差的那一天）：
