@@ -1,0 +1,18 @@
+# Trader-growing · 四资产配置（真实世界结合）
+assets:
+  - symbol: "510300.SS"
+    name: "沪深300ETF"
+    market: "A股"
+    note: "中国核心资产"
+  - symbol: "513100.SS"
+    name: "纳指100ETF"
+    market: "A股(QDII)"
+    note: "美股科技龙头，人民币可买"
+  - symbol: "518880.SS"
+    name: "黄金ETF"
+    market: "A股"
+    note: "避险资产，与股市低相关"
+  - symbol: "501018.SS"
+    name: "原油LOF"
+    market: "A股"
+    note: "大宗商品，高波动"

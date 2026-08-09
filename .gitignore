@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+data/character.json
+data/achievements.json
+data/diary/
+.env
+.venv/
+plan_today.json
+*.bak
