@@ -93,6 +93,7 @@ pip install -r requirements.txt
 python scripts/demo.py
 
 # 4. 开始你的修行
+streamlit run app.py              # 🌐 Web 界面（推荐！花园/看板/图鉴/成长曲线）
 python scripts/tg.py check        # 每日打卡（输入四维分数）
 python scripts/tg.py status       # 角色 / 花园 / 层级
 python scripts/tg.py dashboard    # 四资产看板（金/油/沪深300/纳指）
