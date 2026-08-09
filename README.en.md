@@ -194,6 +194,21 @@ Issues, PRs, and "garden screenshots" are all welcome. (CONTRIBUTING.md planned)
 
 For education and research only — not investment advice. Past performance does not guarantee future results; any strategy can lose money. **Plant first, harvest later. Cultivate first, trade later.**
 
+## 💼 Commercial Licensing
+
+The source code is released under the **MIT License** (free forever for personal / educational / research use — including learning, academic research, and non-commercial projects).
+
+However, the following situations are **NOT covered by the free MIT grant** and require a separate commercial license:
+
+- Using this project (or its core logic) in a **commercial product**: SaaS / cloud-hosted service / enterprise deployment
+- Selling this project as part of a **paid product or service**
+- Using this project in **production systems** within a company or team
+
+For commercial licensing, custom development, or partnerships, please open a [GitHub Issue](https://github.com/Justinjchen-Cornell/Trader-growing/issues) or contact us via the sponsorship links in the README (optional, supports ongoing maintenance).
+
+> Commercial licensing process: ① Describe your use case in an Issue → ② Confirm scope & fee (one-time / annual / revenue-share) → ③ Sign the license agreement. Personal and educational use is always free — use it with confidence.
+
 ## 📄 License
 
-MIT License
+- **Code**: MIT License (free for personal/educational/research use; commercial products require a separate license)
+- **Docs & Design**: CC BY-NC-SA 4.0 (Attribution-NonCommercial-ShareAlike)
