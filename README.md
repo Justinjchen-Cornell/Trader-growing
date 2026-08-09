@@ -86,8 +86,8 @@
 git clone https://github.com/Justinjchen-Cornell/Trader-growing.git
 cd Trader-growing
 
-# 2. 安装依赖
-pip install -r requirements.txt
+# 2. 一键环境准备（依赖 + Wind 数据源 + API Key + 首批数据）
+python scripts/setup.py
 
 # 3. 跑全流程演示（3 天模拟：打卡 → 对账 → 成长）
 python scripts/demo.py

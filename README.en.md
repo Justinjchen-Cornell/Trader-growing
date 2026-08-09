@@ -87,8 +87,8 @@ We split trading psychology into four RPG-style attributes, and give you instant
 git clone https://github.com/Justinjchen-Cornell/Trader-growing.git
 cd Trader-growing
 
-# 2. Install
-pip install -r requirements.txt
+# 2. One-click environment setup (deps + Wind data source + API key + first data)
+python scripts/setup.py
 
 # 3. Run the full demo (3 simulated days: check-in → reconcile → growth)
 python scripts/demo.py
