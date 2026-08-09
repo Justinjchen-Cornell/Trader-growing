@@ -94,9 +94,11 @@ pip install -r requirements.txt
 python scripts/demo.py
 
 # 4. Begin your practice
-python scripts/daily_flow.py check    # daily check-in (enter 4 attribute scores)
-python scripts/daily_flow.py status   # view character & garden
-python scripts/daily_flow.py plan     # view today's strategy plan
+python scripts/tg.py check        # daily check-in (enter 4 attribute scores)
+python scripts/tg.py status       # character / garden / tier
+python scripts/tg.py dashboard    # four-asset dashboard (gold/oil/CSI300/Nasdaq)
+python scripts/tg.py plan         # today's strategy plan (Zhongyong)
+python scripts/tg.py reconcile    # discipline reconciliation (plan vs diary)
 ```
 
 Demo output (the day with discipline issues):

@@ -93,9 +93,11 @@ pip install -r requirements.txt
 python scripts/demo.py
 
 # 4. 开始你的修行
-python scripts/daily_flow.py check    # 每日打卡（输入四维分数）
-python scripts/daily_flow.py status   # 查看角色与花园
-python scripts/daily_flow.py plan     # 查看今日策略计划
+python scripts/tg.py check        # 每日打卡（输入四维分数）
+python scripts/tg.py status       # 角色 / 花园 / 层级
+python scripts/tg.py dashboard    # 四资产看板（金/油/沪深300/纳指）
+python scripts/tg.py plan         # 今日策略计划（中庸策略）
+python scripts/tg.py reconcile    # 纪律对账（计划 vs 日记）
 ```
 
 Demo 输出示例（有纪律偏差的那一天）：

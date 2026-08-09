@@ -7,11 +7,11 @@
 - [x] ASCII 成长花园
 - [x] 全流程 Demo
 
-## V1.0 —— 发芽
-- [ ] 四资产看板（金 / 油 / 沪深300 / 纳指 每日行情 + 策略信号）
-- [ ] 真钱分级解锁：L0 观察 → L1 模拟 → L2 小实盘 → L3 组合
-- [ ] 对接中庸策略 plan.py（计划 JSON）
-- [ ] 对接修行日记 Skill（diary JSON）
+## V1.0 —— 发芽 ✅
+- [x] 四资产看板（金 / 油 / 沪深300 / 纳指 每日行情 + 轻信号）—— `tg.py dashboard`
+- [x] 真钱分级解锁：L0 观察 → L1 模拟 → L2 小实盘 → L3 组合 —— `tiers.py`
+- [x] 对接中庸策略 plan.py（计划 JSON）—— `strategy_bridge.py`
+- [x] 对接修行日记 Skill（diary JSON）—— `journal_bridge.py`
 
 ## V1.5 —— 幼苗
 - [ ] 图鉴系统（书中知识条目收集：回测 / 过拟合 / 夏普 / 卡玛 / IC...）
