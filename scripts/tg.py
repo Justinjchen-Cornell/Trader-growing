@@ -26,6 +26,7 @@ from trader_growing.models import Plan
 from trader_growing.bestiary import Bestiary
 from trader_growing.quests import QuestSystem, DAILY_QUESTS, WEEKLY_QUESTS
 from trader_growing.stats import report as stats_report
+from trader_growing.scoring_guide import show_guide
 
 
 def plan_from_dict(d):
@@ -89,9 +90,11 @@ def cmd_status():
 def cmd_check():
     char = Character()
     print("每日修行打卡：四维打分（0-100，回车默认 50）")
+    print("先对照参考标准，再给自己打分：")
     dims = {}
     for d in ["math", "finance", "psychology", "philosophy"]:
-        v = input("  {}: ".format(d)).strip()
+        show_guide(d)
+        v = input("  {} 打分 [0-100]: ".format(d)).strip()
         try:
             dims[d] = float(v) if v else 50.0
         except ValueError:
