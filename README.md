@@ -83,7 +83,7 @@
 
 ```bash
 # 1. 克隆并进入
-git clone https://github.com/<你的用户名>/Trader-growing.git
+git clone https://github.com/Justinjchen-Cornell/Trader-growing.git
 cd Trader-growing
 
 # 2. 安装依赖

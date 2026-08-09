@@ -84,7 +84,7 @@ We split trading psychology into four RPG-style attributes, and give you instant
 
 ```bash
 # 1. Clone
-git clone https://github.com/<your-username>/Trader-growing.git
+git clone https://github.com/Justinjchen-Cornell/Trader-growing.git
 cd Trader-growing
 
 # 2. Install
