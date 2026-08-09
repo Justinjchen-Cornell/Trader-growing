@@ -6,6 +6,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+import json
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -21,6 +22,7 @@ from trader_growing.tiers import TierSystem
 from trader_growing.dashboard import build_dashboard
 from trader_growing.journal_bridge import load_all
 from trader_growing.stats import analyze, red_flag_count
+from trader_growing.peerboard import PeerBoard
 
 plt.rcParams["font.sans-serif"] = ["Arial Unicode MS", "SimHei", "STHeiti"]
 plt.rcParams["axes.unicode_minus"] = False
@@ -75,8 +77,8 @@ def growth_curve():
 st.title("🌱 Trader-growing · 交易者成长花园")
 st.caption("把交易人生变成一座花园。每天 5 分钟浇水，每周一篮果实，每季度一次修剪。")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
-    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜"])
 
 with tab1:
     c1, c2, c3 = st.columns(3)
@@ -162,3 +164,47 @@ with tab6:
     for a in ACHIEVEMENTS:
         if a["id"] not in ach.unlocked:
             st.write("🔒 **{}**：{}".format(a["name"], a["desc"]))
+
+
+with tab7:
+    st.subheader("👥 匿名同行榜（隐私优先）")
+    st.caption("无服务器 · 匿名 ID · 数据全在本地 · 随时可删")
+    pb = PeerBoard()
+    own = pb.export_card(char, ach, best, tier["name"])
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("匿名 ID", own["id"])
+    c2.metric("等级", own["level"])
+    c3.metric("XP", own["xp"])
+    c4.metric("连击", "{} 天".format(own["streak"]))
+    st.download_button("📤 导出我的匿名成绩单（分享给朋友）",
+                       data=json.dumps(own, ensure_ascii=False, indent=2),
+                       file_name="trader_card_{}.json".format(own["id"]),
+                       mime="application/json")
+    st.divider()
+    st.subheader("📥 导入同行成绩单")
+    up = st.file_uploader("上传朋友导出的 trader_card_*.json", type=["json"])
+    if up is not None:
+        card, err = pb.import_card_data(up.getvalue())
+        if err:
+            st.warning(err)
+        else:
+            st.success("已导入同行: {}（{} 级，XP {}）".format(card["id"], card["level"], card["xp"]))
+    st.divider()
+    st.subheader("🏆 本地排行榜")
+    board = pb.leaderboard(own)
+    if len(board) <= 1:
+        st.info("目前只有你自己——导出成绩单发给朋友，或导入朋友的成绩单")
+    else:
+        import pandas as _pd
+        rows = []
+        for r in board:
+            avg = sum(r.get("dims", {}).values()) / len(r.get("dims", {})) if r.get("dims") else 0
+            rows.append({
+                "排名": r.get("rank"), "匿名ID": r.get("id"),
+                "等级": r.get("level"), "XP": r.get("xp"),
+                "连击": r.get("streak"), "四维均值": round(avg, 0),
+                "徽章": r.get("badges"), "图鉴": r.get("bestiary"),
+                "层级": r.get("tier"),
+            })
+        st.dataframe(_pd.DataFrame(rows), width="stretch")
+    st.caption("🔒 隐私说明：ID 为本地随机码，不含邮箱/姓名/设备信息。删除 data/peers/ 目录即可彻底清除。")
