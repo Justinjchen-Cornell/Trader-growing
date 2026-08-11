@@ -379,9 +379,19 @@ with tab10:
         if "plr" in info:
             return "（盈亏比 {:.2f} = 平均盈利 {:.2%} ÷ 平均亏损 {:.2%}）".format(
                 info["plr"], info.get("gain", 0), info.get("loss", 0))
-        if "dd" in info:
+        if "dd" in info and "hi" in info:
             return "（真实路径：峰值 {hi:.3f} → 谷底 {lo:.3f}，最大回撤 {dd:.0%}，全年 {ret:+.1%}）".format(
                 **info)
+        if "dd" in info:
+            return "（真实最大回撤 {dd:.0%}，本金 {wan:.0f} 万）".format(**info)
+        if "ret" in info and "strat" in info:
+            return "（基准 {ret:+.1%} vs 策略 {strat:.0%}，超额 {:.0f} 个百分点）".format(
+                (info["strat"] - info["ret"]) * 100, **info)
+        if "years" in info:
+            return "（{}）".format(info["years"])
+        if "ma20" in info:
+            return "（信号：MA20 {} / MA60 {} / MA120 {}，收盘 {}）".format(
+                info["sigs"][0], info["sigs"][1], info["sigs"][2], info["price"])
         if "ret" in info and "dd" not in info:
             return "（近一年真实涨幅 {ret:+.1%}）".format(**info)
         return ""

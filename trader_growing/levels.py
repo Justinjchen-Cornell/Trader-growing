@@ -451,6 +451,115 @@ LEVELS = {
              "ans": 0, "exp": "每多交易一次，成本就叠一层——频繁止损的锯齿，成本比亏损更伤。"},
         ],
     },
+    "5-1": {
+        "chapter": 5, "name": "基准对比", "dim": "finance", "xp": 15, "figure": "benchmark",
+        "knowledge": (
+            "基准陷阱：一个收益数字没有意义，必须和基准（参照物）对比。\n"
+            "超额收益 = 策略收益 - 基准收益：比'什么都不做'高多少，才是策略的真实贡献。\n"
+            "基准要选对：判断 A 股策略，基准应该是沪深300（同类市场），"
+            "而不是纳指——拿 A 股策略对比美股涨幅，是'跨市场碰瓷'。"),
+        "task": {
+            "type": "excess_return",
+            "args": {"asset": "510300.SS", "strat": 0.20},
+            "text": "🧪 实战任务：判断策略好不好，先算超额收益。你的'沪深300增强策略'今年赚了 {strat:.0%}，"
+                    "而基准沪深300ETF 近一年真实涨幅 {ret:+.1%}。超额收益是多少个百分点？（四舍五入取整数）",
+            "hint": "超额 = 策略 - 基准；基准数字题目已给出，自己减",
+        },
+        "quiz": [
+            {"q": "为什么收益必须和基准对比？",
+             "opts": ["显得专业", "没有参照物，'赚了 20%'无法判断好坏", "书里要求的", "方便计算"],
+             "ans": 1, "exp": "牛市里随便买都赚——只有跑赢'什么都不做'才算策略有价值。"},
+            {"q": "判断 A 股策略，最合适的基准是？",
+             "opts": ["沪深300（同类市场）", "纳指100（涨得更多）", "黄金", "随便选"],
+             "ans": 0, "exp": "基准要对齐战场：A 股策略 vs A 股大盘，跨市场对比是碰瓷。"},
+            {"q": "策略 +20%、基准 +15%，超额收益是？",
+             "opts": ["+35%", "+5%", "-5%", "无法计算"],
+             "ans": 1, "exp": "20% - 15% = 5%——这才是策略的真实贡献。"},
+        ],
+    },
+    "5-2": {
+        "chapter": 5, "name": "逐年拆解", "dim": "math", "xp": 15, "figure": "yearly",
+        "knowledge": (
+            "整体陷阱：五年总收益 +30% 看起来很稳，逐年拆开可能是'3 年亏、2 年大赚'。\n"
+            "逐年拆解 = 把总收益拆到每个自然年——看出收益是'每年都有'还是'某一年撑起来的'。\n"
+            "看真实数据：沪深300ETF 2021-2025 年，5 年里亏了 3 年（2021/2022/2023），"
+            "全靠 2024/2025 两年翻盘——整体数字会骗人，逐年才能看到真相。"),
+        "task": {
+            "type": "yearly_breakdown",
+            "args": {"asset": "510300.SS"},
+            "text": "🧪 实战任务：逐年拆解——沪深300ETF 近 5 个完整年度（2021-2025）的真实年收益：\n"
+                    "{years}\n"
+                    "哪一年亏得最多？（输入 4 位年份，如 2022）",
+            "hint": "找表格里最负的那个数——注意负号",
+        },
+        "quiz": [
+            {"q": "五年总收益 +30%，能说明每年都赚钱吗？",
+             "opts": ["能，总收益正的就说明", "不能——可能 3 年亏、2 年大赚", "看心情", "必须每年都赚"],
+             "ans": 1, "exp": "整体陷阱：总收益只是累加结果，掩盖了中间的亏损年份。"},
+            {"q": "逐年拆解能发现什么？",
+             "opts": ["收益是每年都有，还是某一年撑起来的", "代码有没有 bug", "手续费多少", "持仓天数"],
+             "ans": 0, "exp": "逐年看收益结构：稳定每年小赚 > 一年暴赚三年亏。"},
+            {"q": "沪深300 2021-2025 里，哪一年亏得最多？",
+             "opts": ["2021 (-4.9%)", "2022 (-19.8%)", "2023 (-10.0%)", "2024 (+19.0%)"],
+             "ans": 1, "exp": "2022 年 -19.8%——但同期很多人说'沪深300 长期持有稳赚'，这就是整体陷阱。"},
+        ],
+    },
+    "5-3": {
+        "chapter": 5, "name": "回撤深度", "dim": "finance", "xp": 15, "figure": "underwater",
+        "knowledge": (
+            "回撤陷阱：只看最终收益，看不到持有过程有多煎熬。\n"
+            "水下曲线（Underwater Curve）= 把组合'距离历史峰值亏了多少'画出来——"
+            "在水下潜多深、待多久，一眼看清。\n"
+            "最大回撤 = 从峰值到谷底的最大跌幅：100 万本金回撤 10% = 浮亏 10 万，"
+            "要涨 11.1% 才能回本——回撤越深，回本越难。"),
+        "task": {
+            "type": "drawdown_amount",
+            "args": {"asset": "510300.SS", "capital": 1000000},
+            "text": "🧪 实战任务：沪深300ETF 近一年真实最大回撤 {dd:.0%}。"
+                    "如果你 100 万本金满仓持有，回撤期间最大浮亏是多少万元？（取整数）",
+            "hint": "浮亏 = 本金 × 回撤幅度；万元 = ÷10000",
+        },
+        "quiz": [
+            {"q": "水下曲线画的是什么？",
+             "opts": ["收益曲线", "距离历史峰值亏了多少（回撤深度）", "成交量", "持仓人数"],
+             "ans": 1, "exp": "水下 = 比历史高点低多少——潜多深、待多久一眼看清。"},
+            {"q": "回撤 20% 后需要涨多少才能回本？",
+             "opts": ["20%", "25%（1/0.8-1）", "10%", "只要涨回来就行，不用更多"],
+             "ans": 1, "exp": "100 万亏 20% = 80 万，回 100 万要涨 25%——回撤越深回本越难。"},
+            {"q": "为什么说回撤是'持有体验'问题？",
+             "opts": ["因为回撤让人拿不住，最可能在底部割肉", "因为回撤好看", "因为回撤不影响收益", "无所谓"],
+             "ans": 0, "exp": "最大回撤决定你能不能扛到赚钱那天——扛不住，策略再好也白搭。"},
+        ],
+    },
+    "5-BOSS": {
+        "chapter": 5, "name": "参数敏感性", "dim": "philosophy", "xp": 30, "figure": "param_sens", "boss": True,
+        "knowledge": (
+            "山峰陷阱：参数扫描里最尖的峰（最优参数）往往不可信——旁边动一下收益就掉悬崖。\n"
+            "正确姿势：选高原，不选尖峰——参数在附近小范围变动，收益依然平稳，才叫稳健。\n"
+            "参数敏感性测试 = 把参数动一动（MA20→MA60→MA120），看结论还稳不稳。\n"
+            "真实案例（今天的任务）：沪深300 收盘价在 MA20 上方（多头），"
+            "却在 MA60/MA120 下方（空头）——参数一动，信号就翻脸。"),
+        "task": {
+            "type": "ma_consistency",
+            "args": {"windows": [20, 60, 120]},
+            "text": "🧪 实战任务：BOSS 战！参数敏感性实验——沪深300ETF 今日收盘 {price} 元，"
+                    "真实均线：MA20={ma20}、MA60={ma60}、MA120={ma120}。\n"
+                    "三个窗口的信号（收盘价在均线上方=多头，下方=空头）一致吗？"
+                    "（输入 1=一致，2=不一致）",
+            "hint": "逐个比较：价格在每条均线的上方还是下方？有一个不一致就是'参数敏感'",
+        },
+        "quiz": [
+            {"q": "『选高原，不选尖峰』是什么意思？",
+             "opts": ["选参数扫描里收益最高的点", "选参数附近小范围变动收益依然平稳的区间", "选波动最大的点", "选名字好听的点"],
+             "ans": 1, "exp": "尖峰是运气，高原是实力——参数一动就崩的'最优'不可信。"},
+            {"q": "参数敏感性测试的做法是？",
+             "opts": ["只测最优参数", "把参数动一动（如 MA20/60/120），看结论还稳不稳", "删掉所有参数", "随机选参数"],
+             "ans": 1, "exp": "结论对参数不敏感（稳健）才值得信——这正是今天任务的实战。"},
+            {"q": "为什么尖峰参数不可信？",
+             "opts": ["它太便宜", "它大概率是'背答案'——刚好拟合了历史噪音", "它太贵", "因为它参数太多"],
+             "ans": 1, "exp": "最优参数常常是统计巧合，样本外就现原形（第 6 章深聊）。"},
+        ],
+    },
 }
 
 
@@ -715,3 +824,69 @@ def solve_task(ttype, args=None):
             return None, "数据异常（近期回撤未触发止损线）"
         ans = 2 if ret > 0 else 1
         return ans, {"date": str(today), "ret": ret, "dd": dd_val, "hi": hi, "lo": lo}
+
+    if ttype == "excess_return":
+        """超额收益 = 策略收益 - 基准（沪深300 真实涨幅）"""
+        sym = args.get("asset", "510300.SS")
+        strat = args.get("strat", 0.20)
+        close = load_latest(sym)
+        if close is None:
+            return None, "本地数据缺失"
+        ret = window_ret(close)
+        if ret is None:
+            return None, "数据不足"
+        ans = round((strat - ret) * 100)
+        return ans, {"date": str(today), "ret": ret, "strat": strat}
+
+    if ttype == "yearly_breakdown":
+        """逐年拆解：各自然年收益，找出亏最多的年份（跳过不完整年度）"""
+        sym = args.get("asset", "510300.SS")
+        close = load_latest(sym)
+        if close is None:
+            return None, "本地数据缺失"
+        yrs = {}
+        for y, grp in close.groupby(close.index.year):
+            if len(grp) < 200:      # 跳过数据不完整的年份
+                continue
+            yrs[int(y)] = float(grp.iloc[-1] / grp.iloc[0] - 1)
+        if not yrs:
+            return None, "数据不足"
+        worst = min(yrs, key=yrs.get)
+        years_str = ", ".join("{} {:+.1%}".format(y, r) for y, r in sorted(yrs.items()))
+        return worst, {"date": str(today), "years": years_str,
+                       "years_dict": {str(y): round(r, 4) for y, r in yrs.items()}}
+
+    if ttype == "drawdown_amount":
+        """回撤金额：本金 × 真实最大回撤（输出万元）"""
+        from trader_growing.dashboard import max_drawdown
+        sym = args.get("asset", "510300.SS")
+        capital = args.get("capital", 1000000)
+        close = load_latest(sym)
+        if close is None:
+            return None, "本地数据缺失"
+        dd = max_drawdown(close)
+        if dd is None:
+            return None, "数据不足"
+        dd_val = dd[0]
+        return round(abs(dd_val) * capital / 10000), {
+            "date": str(today), "dd": dd_val, "wan": capital / 10000}
+
+    if ttype == "ma_consistency":
+        """参数敏感性：多个 MA 窗口信号是否一致（收盘价在均线上/下方）"""
+        windows = args.get("windows", [20, 60, 120])
+        close = load_latest("510300.SS")
+        if close is None:
+            return None, "本地数据缺失"
+        if len(close) < max(windows) + 5:
+            return None, "数据不足"
+        px = float(close.iloc[-1])
+        sigs = []
+        ma_vals = {}
+        for w in windows:
+            ma = float(close.rolling(w).mean().iloc[-1])
+            ma_vals["ma{}".format(w)] = round(ma, 3)
+            sigs.append(1 if px > ma else -1)
+        ans = 1 if len(set(sigs)) == 1 else 2
+        return ans, {"date": str(today), "price": round(px, 3),
+                     "sigs": ["多头" if s == 1 else "空头" for s in sigs],
+                     **ma_vals}
