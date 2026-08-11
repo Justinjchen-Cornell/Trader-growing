@@ -560,6 +560,118 @@ LEVELS = {
              "ans": 1, "exp": "最优参数常常是统计巧合，样本外就现原形（第 6 章深聊）。"},
         ],
     },
+    "6-1": {
+        "chapter": 6, "name": "样本内外", "dim": "philosophy", "xp": 15, "figure": "oos",
+        "knowledge": (
+            "过拟合的经典现场：扫描 490 种参数组合，样本内冠军漂亮（收益 +25%），"
+            "拿到样本外（参数从没见过的数据）就现原形，甚至跑输简单定投。\n"
+            "样本内（In-Sample）= 用来'优化参数'的数据；样本外（Out-of-Sample）= 没参与优化的数据。\n"
+            "真实案例：沪深300 2021-2024 样本内累计 -18.3%，2025 样本外 +24.3%——"
+            "样本外可以和样本内完全相反。过去的表现，不能线性外推。"),
+        "task": {
+            "type": "in_out_compare",
+            "args": {"asset": "510300.SS"},
+            "text": "🧪 实战任务：把真实历史当考场。沪深300ETF：样本内（2021-2024 四个年度）"
+                    "累计涨幅 {in:+.1%}，样本外（2025，没参与'优化'的年份）涨幅 {out:+.1%}。"
+                    "哪一段涨得多？（输入 1=样本内，2=样本外，0=差不多）",
+            "hint": "样本内=你'做作业'用的年份，样本外='闭卷考'的年份——数据在 5-2 关见过",
+        },
+        "quiz": [
+            {"q": "样本外测试是什么？",
+             "opts": ["用全部数据再测一遍", "用参数从没见过的数据验证", "只测一年", "随机抽样"],
+             "ans": 1, "exp": "闭卷考：训练集选出的最优参数，去新数据重新考一次。"},
+            {"q": "为什么样本内好的策略，样本外常常衰减？",
+             "opts": ["市场突然变好", "最优参数大概率是碰巧拟合历史噪音", "手续费变高", "数据变多"],
+             "ans": 1, "exp": "490 个参数总有一个'背答案'背得漂亮——换考卷就露馅。"},
+            {"q": "样本内 -18.3%、样本外 +24.3%（真实数据），说明什么？",
+             "opts": ["策略稳赚", "样本外可能完全不同于样本内——别用过去赌未来", "数据错了", "应该反过来"],
+             "ans": 1, "exp": "一个方向的偶然不可信——这正是要样本外验证的原因。"},
+        ],
+    },
+    "6-2": {
+        "chapter": 6, "name": "Walk-forward", "dim": "math", "xp": 15, "figure": "walkforward",
+        "knowledge": (
+            "Walk-forward = 边走边调：模拟'定期重新优化参数'的交易流程。\n"
+            "结构：滚动窗口——用前 2 年数据优化参数 → 下一年验证 → 窗口向前滚 → 重新优化 → 再验证。\n"
+            "它比一次性样本外更接近实盘：真实交易中你本来就会定期调参。"
+            "分段验证累计，才是策略真实的'边走边调'收益。"),
+        "task": {
+            "type": "walkforward_agg",
+            "args": {"asset": "510300.SS"},
+            "text": "🧪 实战任务：Walk-forward 实验——每年末用前 2 年数据重新优化，下一年验证。"
+                    "沪深300 三段验证年（真实收益）：2023 {r1:+.1%}、2024 {r2:+.1%}、2025 {r3:+.1%}。\n"
+                    "三段验证累计收益 = (1+2023) × (1+2024) × (1+2025) - 1，约多少百分比？（取整数）",
+            "hint": "累乘：1.0 × 0.9 × 1.19 × 1.243 - 1；这是三段 walk-forward 的总体验证成绩",
+        },
+        "quiz": [
+            {"q": "Walk-forward 和一次性样本外测试的区别是？",
+             "opts": ["没有区别", "分段滚动——每段重新优化再验证", "walk-forward 不用数据", "一次性更准"],
+             "ans": 1, "exp": "边走边调：模拟真实交易里的定期调参，而不是'一次优化用到老'。"},
+            {"q": "Walk-forward 的窗口结构是？",
+             "opts": ["训练窗口 + 验证窗口滚动前进", "随机选几天", "只用最后一年", "只用第一年"],
+             "ans": 0, "exp": "前 N 年训练 → 下一年验证 → 窗口滚动 → 重复。"},
+            {"q": "为什么 Walk-forward 更接近实盘？",
+             "opts": ["它更快", "实盘本来就定期调参，分段模拟更真实", "它不看数据", "它不用优化"],
+             "ans": 1, "exp": "你不是 5 年前设好参数就不动了——walk-forward 模拟了你的真实行为。"},
+        ],
+    },
+    "6-3": {
+        "chapter": 6, "name": "交叉验证", "dim": "math", "xp": 15, "figure": "cv",
+        "knowledge": (
+            "交叉验证 = 把同一段数据按不同方式切开，多次验证同一个结论。\n"
+            "切法可以有很多：前 4 后 1、奇偶年、随机分桶……每种切法都重新验证。\n"
+            "原则：多次验证比单次验证更可靠——只有多种切法结论一致（共识强），才值得相信。"
+            "真实案例（今天的任务）：同样 5 年数据，奇数年 +6.5%、偶数年 -4.6%——"
+            "切法一变结论就翻脸，这就是'结论脆弱'的典型。"),
+        "task": {
+            "type": "odd_even_cv",
+            "args": {"asset": "510300.SS"},
+            "text": "🧪 实战任务：交叉验证——把沪深300 五年真实数据按两种切法验证："
+                    "奇数年（2021/23/25）累计 {odd:+.1%}，偶数年（2022/24）累计 {even:+.1%}。\n"
+                    "两种切法的结论一致吗？（输入 1=都赚，2=都亏，3=不一致）",
+            "hint": "都赚 = 两个数都为正；都亏 = 都为负；一正一负 = 结论不一致",
+        },
+        "quiz": [
+            {"q": "交叉验证的核心做法是什么？",
+             "opts": ["多种切法验证同一结论，共识强才可信", "只测最优切法", "只测一年", "随机删数据"],
+             "ans": 0, "exp": "前4后1、奇偶年、随机分桶……切法越多，共识越可信。"},
+            {"q": "为什么多次验证比单次验证可靠？",
+             "opts": ["多次验证更慢", "单次可能是巧合，多次共识排除偶然", "数据更多了", "更省时间"],
+             "ans": 1, "exp": "一种切法好可能是运气——换种切法还好，才是实力。"},
+            {"q": "同一年份段，不同切法结论相反（一正一负）说明？",
+             "opts": ["策略绝对可靠", "结论脆弱——别轻易相信", "数据一定错了", "应该只信正的"],
+             "ans": 1, "exp": "真实案例：奇数年 +6.5% vs 偶数年 -4.6%——切法一变就翻脸。"},
+        ],
+    },
+    "6-BOSS": {
+        "chapter": 6, "name": "规则负担", "dim": "philosophy", "xp": 30, "figure": "rule_burden", "boss": True,
+        "knowledge": (
+            "规则负担 = 旋钮越多，越容易凑出'碰巧好看'的回测。\n"
+            "数学直觉：10 条规则 × 每规则 2-3 个参数 = 数百上千种组合，"
+            "总有一个在历史数据上'完美'——那是背答案，不是会做题。\n"
+            "少即是多：先跑通简单策略，再加规则。每加一条都要问：样本外还成立吗？"
+            "同时别忘成本——回测 +35% 扣掉交易成本还剩多少？"),
+        "task": {
+            "type": "rule_burden_judge",
+            "args": {},
+            "text": "🧪 实战任务：BOSS 战！真实锚点——近一年涨幅：沪深300 {hs:+.1%}、"
+                    "纳指100 {nq:+.1%}、黄金 {gold:+.1%}。\n"
+                    "有人告诉你他的'10 规则策略'（均线+MACD+KDJ+布林+量能+…）回测年化 +35%。"
+                    "扣掉交易成本后，这可信吗？（输入 1=可信，2=可疑）",
+            "hint": "连'买入持有纳指'一年都只涨 {nq:+.1%}——10 条规则还要扣成本，+35% 意味着什么？",
+        },
+        "quiz": [
+            {"q": "『规则负担』指什么？",
+             "opts": ["规则/参数越多，越容易凑出'碰巧好'的回测", "规则越多交易越稳", "规则越多成本越低", "规则越多越专业"],
+             "ans": 0, "exp": "组合爆炸：总有一个参数组合碰巧拟合历史——换考卷就露馅。"},
+            {"q": "为什么 10 规则策略回测 +35% 不可信？",
+             "opts": ["因为 35% 太少", "组合爆炸——总有一个碰巧拟合历史，且未必扣成本", "因为规则多就好", "因为回测不准"],
+             "ans": 1, "exp": "真实锚点：连纳指买入持有都只 +31.5%——10 规则策略要扣成本还 +35%，概率极低。"},
+            {"q": "『少即是多』的意思是？",
+             "opts": ["规则越少越容易验证，别一上来就堆叠", "规则越少收益越高", "不要用规则", "规则数量无所谓"],
+             "ans": 0, "exp": "先跑通简单策略，每加一条规则都要用样本外重新验证。"},
+        ],
+    },
 }
 
 
@@ -840,15 +952,12 @@ def solve_task(ttype, args=None):
 
     if ttype == "yearly_breakdown":
         """逐年拆解：各自然年收益，找出亏最多的年份（跳过不完整年度）"""
+        from trader_growing.dashboard import yearly_returns
         sym = args.get("asset", "510300.SS")
         close = load_latest(sym)
         if close is None:
             return None, "本地数据缺失"
-        yrs = {}
-        for y, grp in close.groupby(close.index.year):
-            if len(grp) < 200:      # 跳过数据不完整的年份
-                continue
-            yrs[int(y)] = float(grp.iloc[-1] / grp.iloc[0] - 1)
+        yrs = yearly_returns(close)
         if not yrs:
             return None, "数据不足"
         worst = min(yrs, key=yrs.get)
@@ -890,3 +999,68 @@ def solve_task(ttype, args=None):
         return ans, {"date": str(today), "price": round(px, 3),
                      "sigs": ["多头" if s == 1 else "空头" for s in sigs],
                      **ma_vals}
+
+    if ttype == "in_out_compare":
+        """样本内外：2021-2024 累计 vs 2025（没参与优化的年份）"""
+        from trader_growing.dashboard import yearly_returns
+        sym = args.get("asset", "510300.SS")
+        close = load_latest(sym)
+        if close is None:
+            return None, "本地数据缺失"
+        yrs = yearly_returns(close)
+        need = {2021, 2022, 2023, 2024, 2025}
+        if not need.issubset(set(yrs)):
+            return None, "数据不足（缺少完整年度）"
+        ins = 1.0
+        for y in [2021, 2022, 2023, 2024]:
+            ins *= (1 + yrs[y])
+        ins -= 1
+        out = yrs[2025]
+        ans = 1 if ins > out * 1.01 else 2 if out > ins * 1.01 else 0
+        return ans, {"date": str(today), "in": ins, "out": out}
+
+    if ttype == "walkforward_agg":
+        """Walk-forward 三段验证年（2年训练+1年验证）累乘收益"""
+        from trader_growing.dashboard import yearly_returns
+        sym = args.get("asset", "510300.SS")
+        close = load_latest(sym)
+        if close is None:
+            return None, "本地数据缺失"
+        yrs = yearly_returns(close)
+        ys = [y for y in (2023, 2024, 2025) if y in yrs]
+        if len(ys) < 3:
+            return None, "数据不足（缺少验证年份）"
+        acc = 1.0
+        for y in ys:
+            acc *= (1 + yrs[y])
+        total = acc - 1
+        return round(total * 100), {"date": str(today), "r1": yrs[2023], "r2": yrs[2024],
+                                    "r3": yrs[2025], "total": total}
+
+    if ttype == "odd_even_cv":
+        """交叉验证：奇数年 vs 偶数年累计，结论是否一致"""
+        from trader_growing.dashboard import yearly_returns
+        sym = args.get("asset", "510300.SS")
+        close = load_latest(sym)
+        if close is None:
+            return None, "本地数据缺失"
+        yrs = yearly_returns(close)
+        need = {2021, 2022, 2023, 2024, 2025}
+        if not need.issubset(set(yrs)):
+            return None, "数据不足"
+        odd = 1.0
+        for y in (2021, 2023, 2025):
+            odd *= (1 + yrs[y])
+        odd -= 1
+        even = (1 + yrs[2022]) * (1 + yrs[2024]) - 1
+        ans = 1 if odd > 0.005 and even > 0.005 else 2 if odd < -0.005 and even < -0.005 else 3
+        return ans, {"date": str(today), "odd": odd, "even": even}
+
+    if ttype == "rule_burden_judge":
+        """规则负担 BOSS：真实资产锚点 + 判断 +35% 是否可信（固定答案 2）"""
+        hs = window_ret(load_latest("510300.SS"))
+        nq = window_ret(load_latest("513100.SS"))
+        gold = window_ret(load_latest("518880.SS"))
+        if hs is None or nq is None or gold is None:
+            return None, "数据不足"
+        return 2, {"date": str(today), "hs": hs, "nq": nq, "gold": gold}

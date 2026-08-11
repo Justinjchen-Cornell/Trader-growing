@@ -392,6 +392,14 @@ with tab10:
         if "ma20" in info:
             return "（信号：MA20 {} / MA60 {} / MA120 {}，收盘 {}）".format(
                 info["sigs"][0], info["sigs"][1], info["sigs"][2], info["price"])
+        if "in" in info and "out" in info:
+            return "（样本内 {in:+.1%} vs 样本外 {out:+.1%}——闭卷考翻盘？）".format(**info)
+        if "total" in info:
+            return "（三段累乘 {total:+.1%} = (1+2023)(1+2024)(1+2025)-1）".format(**info)
+        if "odd" in info:
+            return "（奇数年 {odd:+.1%} vs 偶数年 {even:+.1%}——切法一变就翻脸）".format(**info)
+        if "hs" in info:
+            return "（真实锚点：沪深300 {hs:+.1%} / 纳指 {nq:+.1%} / 黄金 {gold:+.1%}）".format(**info)
         if "ret" in info and "dd" not in info:
             return "（近一年真实涨幅 {ret:+.1%}）".format(**info)
         return ""

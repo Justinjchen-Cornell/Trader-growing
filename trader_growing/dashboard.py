@@ -73,6 +73,18 @@ def pair_corr(close_a, close_b, days=252):
     return float(ra.loc[j].corr(rb.loc[j]))
 
 
+def yearly_returns(close, min_days=200):
+    """自然年收益 {年份: 收益率}，跳过数据不完整的年份（min_days 天以下）"""
+    if close is None:
+        return {}
+    yrs = {}
+    for y, grp in close.groupby(close.index.year):
+        if len(grp) < min_days:
+            continue
+        yrs[int(y)] = float(grp.iloc[-1] / grp.iloc[0] - 1)
+    return yrs
+
+
 def max_drawdown(close, days=252):
     """近 N 日最大回撤：返回 (dd, 峰值价, 谷底价)。dd 为负值"""
     if close is None or len(close) < 30:
