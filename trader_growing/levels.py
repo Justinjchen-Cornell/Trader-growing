@@ -1031,8 +1031,14 @@ class Progress:
         self.completed = []          # ["1-1", ...] 兼容旧数据
         self.details = {}            # lid -> {"at": 首通日期, "quiz": 测验得分, "attempts": 尝试次数}
         self.reviews = {}            # lid -> 最近复习日期（每日限一次）
+        self.boss_revives = {}       # lid -> 最近 BOSS 复战 ISO 周（每周限一次）
         self.quiz_correct_total = 0  # 累计答对测验题数
         self.load()
+
+    @staticmethod
+    def _week_key():
+        iso = date.today().isocalendar()
+        return "{}-W{:02d}".format(iso[0], iso[1])
 
     def load(self):
         if os.path.exists(self.data_path):
@@ -1041,14 +1047,23 @@ class Progress:
             self.completed = d.get("completed", [])
             self.details = d.get("details", {})
             self.reviews = d.get("reviews", {})
+            self.boss_revives = d.get("boss_revives", {})
             self.quiz_correct_total = d.get("quiz_correct_total", 0)
 
     def save(self):
         os.makedirs(os.path.dirname(self.data_path), exist_ok=True)
         with open(self.data_path, "w", encoding="utf-8") as f:
             json.dump({"completed": self.completed, "details": self.details,
-                       "reviews": self.reviews, "quiz_correct_total": self.quiz_correct_total},
+                       "reviews": self.reviews, "boss_revives": self.boss_revives,
+                       "quiz_correct_total": self.quiz_correct_total},
                       f, ensure_ascii=False, indent=2)
+
+    def boss_revive_done_this_week(self, lid):
+        return self.boss_revives.get(lid) == self._week_key()
+
+    def mark_boss_revive(self, lid):
+        self.boss_revives[lid] = self._week_key()
+        self.save()
 
     def done(self, lid):
         return lid in self.completed

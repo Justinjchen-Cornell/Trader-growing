@@ -110,8 +110,9 @@ class PeerBoard:
             return True
         return False
 
-    def leaderboard(self, own_card):
-        """本地排名：自己 + 已导入的同行，按 XP 排序"""
+    def leaderboard(self, own_card, sort_by="xp"):
+        """本地排名：自己 + 已导入的同行。
+        sort_by: "xp"（默认）/ "levels"（通关关卡）/ "worlds"（通关世界）"""
         rows = []
         if own_card:
             rows.append(own_card)
@@ -121,7 +122,12 @@ class PeerBoard:
                     rows.append(json.load(f))
             except (json.JSONDecodeError, OSError):
                 continue
-        rows.sort(key=lambda c: c.get("xp", 0), reverse=True)
+        if sort_by == "levels":
+            rows.sort(key=lambda c: (c.get("levels", 0), c.get("xp", 0)), reverse=True)
+        elif sort_by == "worlds":
+            rows.sort(key=lambda c: (c.get("worlds", 0), c.get("xp", 0)), reverse=True)
+        else:
+            rows.sort(key=lambda c: c.get("xp", 0), reverse=True)
         for i, r in enumerate(rows, 1):
             r["rank"] = i
         return rows

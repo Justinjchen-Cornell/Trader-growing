@@ -161,7 +161,7 @@ Trader-growing/
 │   ├── levels.py             # 🎮 learning levels: 9 worlds / 36 levels + live-data task engine
 │   ├── questions.py          # daily cultivation test bank (tiered)
 │   ├── knowledge.py          # objective knowledge test bank
-│   ├── bestiary.py           # 📜 knowledge bestiary (34 entries)
+│   ├── bestiary.py           # 📜 knowledge bestiary (39 entries)
 │   ├── quests.py             # daily / weekly quests
 │   ├── tiers.py              # tiered real-money unlocking (L0-L3)
 │   ├── stats.py              # discipline trend stats

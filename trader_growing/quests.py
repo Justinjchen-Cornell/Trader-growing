@@ -17,6 +17,7 @@ WEEKLY_QUESTS = [
     {"id": "factor",    "name": "因子实验", "desc": "提假设->算IC->分组分析->记录结论", "xp": 30},
     {"id": "param",     "name": "参数研究", "desc": "扫一个参数，判断高原型还是山峰型", "xp": 30},
     {"id": "backtest",  "name": "回测复现", "desc": "复现一个书里/论文里的策略回测", "xp": 30},
+    {"id": "boss_revive", "name": "BOSS 复战", "desc": "用本周行情重打一个已通关的 BOSS 关（每周限一次）", "xp": 30},
 ]
 
 

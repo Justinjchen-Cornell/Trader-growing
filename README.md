@@ -173,7 +173,7 @@ Trader-growing/
 │   ├── levels.py             # 🎮 学习关卡：9 世界 36 关 + 真实数据任务引擎
 │   ├── questions.py          # 每日修行测试题库（分级）
 │   ├── knowledge.py          # 客观知识测试题库
-│   ├── bestiary.py           # 📜 知识图鉴（34 条）
+│   ├── bestiary.py           # 📜 知识图鉴（39 条）
 │   ├── quests.py             # 每日/每周任务
 │   ├── tiers.py              # 真钱分级解锁（L0-L3）
 │   ├── stats.py              # 偏差趋势统计

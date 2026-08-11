@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import json
+from datetime import date as _date
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -154,9 +155,12 @@ with tab5:
     done_today = qs.daily_done_today()
     for q in DAILY_QUESTS:
         st.write("{} **{}**：{}".format("✅" if q["id"] in done_today else "⬜", q["name"], q["desc"]))
-    st.subheader("本周每周任务（+30 XP）")
+    st.subheader("本周每周任务（各 +30 XP）")
+    week_done = qs.week_done
+    week_key_prefix = "{}W{}:".format(_date.today().isocalendar()[0], _date.today().isocalendar()[1])
     for q in WEEKLY_QUESTS:
-        st.write("⬜ **{}**：{}".format(q["name"], q["desc"]))
+        done = any(k.startswith(week_key_prefix) and k.endswith(":" + q["id"]) for k in week_done)
+        st.write("{} **{}**：{}".format("✅" if done else "⬜", q["name"], q["desc"]))
 
 with tab6:
     st.subheader("🏅 已解锁徽章")
@@ -198,7 +202,9 @@ with tab7:
             st.success("已导入同行: {}（{} 级，XP {}）".format(card["id"], card["level"], card["xp"]))
     st.divider()
     st.subheader("🏆 本地排行榜")
-    board = pb.leaderboard(own)
+    sort_by = st.selectbox("排行榜排序", ["按 XP", "按通关关卡", "按通关世界"], index=0)
+    sort_key = {"按 XP": "xp", "按通关关卡": "levels", "按通关世界": "worlds"}[sort_by]
+    board = pb.leaderboard(own, sort_by=sort_key)
     if len(board) <= 1:
         st.info("目前只有你自己——导出成绩单发给朋友，或导入朋友的成绩单")
     else:
@@ -216,6 +222,27 @@ with tab7:
             })
         st.dataframe(_pd.DataFrame(rows), width="stretch")
     st.caption("🔒 隐私说明：ID 为本地随机码，不含邮箱/姓名/设备信息。删除 data/peers/ 目录即可彻底清除。")
+
+    # ---- 关卡进度对比 ----
+    st.divider()
+    st.subheader("⚔️ 关卡进度对比（谁先通关世界）")
+    peers_n = [r for r in board if r.get("id") != own.get("id")]
+    if not peers_n:
+        st.info("导入朋友的成绩单后，这里会显示你们的世界/关卡进度差距")
+    else:
+        import pandas as _pd2
+        my_lv, my_wd = own.get("levels", 0), own.get("worlds", 0)
+        cmp_rows = []
+        for r in peers_n:
+            cmp_rows.append({
+                "匿名ID": r.get("id"),
+                "同行关卡": r.get("levels", 0), "同行世界": r.get("worlds", 0),
+                "我的关卡": my_lv, "我的世界": my_wd,
+                "关卡差": r.get("levels", 0) - my_lv,
+                "世界差": r.get("worlds", 0) - my_wd,
+            })
+        st.dataframe(_pd2.DataFrame(cmp_rows), width="stretch")
+        st.caption("🟢 正数 = 同行领先你 | 🔴 负数 = 你领先同行 | 关卡 = 36 关总数，世界 = 9 世界总数")
 
 
 with tab8:
@@ -444,8 +471,9 @@ with tab10:
         if new:
             st.success("🏅 新成就解锁: " + ", ".join("「{}」".format(a["name"]) for a in new))
 
-    def _render_level(lid_, lvl, review=False):
-        """渲染一个关卡：知识卡 → 实战任务 → 测验。review=True 为每日复习（+5 XP）"""
+    def _render_level(lid_, lvl, review=False, boss_revive=False):
+        """渲染一个关卡：知识卡 → 实战任务 → 测验。
+        review=True 为每日复习（+5 XP）；boss_revive=True 为每周 BOSS 复战（+5 XP + 周任务 +30 XP）"""
         ch = lvl["chapter"]
         if ch > 1:
             prev_done, prev_total = prog.world_progress(ch - 1)
@@ -457,7 +485,9 @@ with tab10:
         st.markdown("### {} · {} {}".format(
             WORLDS[ch]["name"], "BOSS" if lvl.get("boss") else "关卡", lvl["name"]))
         st.caption("奖励: +{} XP{} | 训练维度: {} | {}".format(
-            lvl["xp"], "（复习 +5 XP）" if review else "（首通）", lvl["dim"], WORLDS[ch]["title"]))
+            lvl["xp"],
+            "（复战 +5 XP + 周任务 +30 XP）" if boss_revive else "（复习 +5 XP）" if review else "（首通）",
+            lvl["dim"], WORLDS[ch]["title"]))
         st.progress(prog.world_progress(ch)[0] / prog.world_progress(ch)[1])
 
         with st.expander("📖 知识卡（先学）", expanded=True):
@@ -493,7 +523,7 @@ with tab10:
         # ---- 测验 ----
         if st.session_state.get(task_key):
             st.markdown("### 🧠 关卡测验（答对 2/3 通关{}）".format(
-                "，复习得 +5 XP" if review else ""))
+                "，复战得 +5 XP + 周任务 +30 XP" if boss_revive else "，复习得 +5 XP" if review else ""))
             for i, q in enumerate(lvl["quiz"], 1):
                 st.selectbox("Q{}: {}".format(i, q["q"]), ["— 请选择 —"] + q["opts"],
                              key="quiz_{}_{}".format(lid_, i))
@@ -522,6 +552,16 @@ with tab10:
                         st.success("🎉 关卡通关！+{} XP | 维度 {} +5 | 图鉴「{}」点亮".format(
                             lvl["xp"], lvl["dim"], lvl["figure"]))
                         _check_level_achievements(prog, char)
+                    elif boss_revive:
+                        if prog.boss_revive_done_this_week(lid_):
+                            st.info("本周已复战过这个 BOSS（每周限一次）——下周再来")
+                        else:
+                            prog.mark_boss_revive(lid_)
+                            char.xp += 5
+                            char.save()
+                            wk_xp = qs.complete_weekly("boss_revive", char)
+                            st.balloons()
+                            st.success("🎉 BOSS 复战成功！+5 XP | 周任务「BOSS 复战」+{} XP".format(wk_xp))
                     else:
                         if prog.reviewed_today(lid_):
                             st.info("今日已复习过本关（每日每关限一次）——明天再来")
@@ -551,3 +591,20 @@ with tab10:
         pick = st.selectbox("选择要复习的关卡", prog.completed,
                             format_func=lambda l: "{} · {}".format(l, LEVELS[l]["name"]))
         _render_level(pick, LEVELS[pick], review=True)
+
+    # ---- BOSS 复战（每周） ----
+    st.divider()
+    st.subheader("⚔️ BOSS 复战（每周 · 用本周行情再战 BOSS）")
+    st.caption("已通关的 BOSS 每周可复战一次：复战 +5 XP + 周任务「BOSS 复战」+30 XP（每周限一次）")
+    boss_ids = [l for l in prog.completed if l.endswith("-BOSS")]
+    if not boss_ids:
+        st.info("先通关任意一个 BOSS 关（如 W1 的「过拟合挑战」），即可解锁每周复战")
+    else:
+        done_this_week = [l for l in boss_ids if prog.boss_revive_done_this_week(l)]
+        if done_this_week:
+            st.success("本周已复战: " + ", ".join("「{}」".format(LEVELS[l]["name"]) for l in done_this_week))
+        else:
+            st.info("本周还未复战任何 BOSS——选一个开打！")
+        pick = st.selectbox("选择要复战的 BOSS", boss_ids,
+                            format_func=lambda l: "W{} · {}".format(l.split("-")[0], LEVELS[l]["name"]))
+        _render_level(pick, LEVELS[pick], review=True, boss_revive=True)
