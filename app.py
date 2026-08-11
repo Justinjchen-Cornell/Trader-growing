@@ -23,6 +23,7 @@ from trader_growing.dashboard import build_dashboard
 from trader_growing.journal_bridge import load_all
 from trader_growing.stats import analyze, red_flag_count
 from trader_growing.peerboard import PeerBoard
+from trader_growing.models import DailyRecord
 from trader_growing.questions import (QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE,
     dim_score, overall_score, grade, red_flags_from_answers,
     questions_for, max_level_for_xp, level_badges)
@@ -112,7 +113,7 @@ with tab2:
     if len(df) == 0:
         st.warning("未找到本地数据（~/.oxq/data/market/*.parquet）")
     else:
-        st.dataframe(df, width='stretch')
+            st.dataframe(df, width='stretch')
 
 with tab3:
     st.subheader("📜 知识图鉴（{} 条）".format(len(ENTRIES)))
@@ -218,9 +219,13 @@ with tab8:
     from datetime import date as _date
     today = str(_date.today())
     if char.last_date == today:
-        st.success("今日已打卡（{}）——明天再来。当前花园：".format(today))
+        st.success("今日已打卡（{}）".format(today))
         s_now = char.summary()
         st.pyplot(radar_chart(s_now["dims"]))
+        if st.button("🔄 重新测试（覆盖今日）"):
+            char.last_date = None
+            char.save()
+            st.rerun()
     else:
         unlock = max_level_for_xp(char.xp)
         st.info("难度：{} | 每题 0-4 分（{}）".format(level_badges(unlock), SCALE))
@@ -231,36 +236,38 @@ with tab8:
             st.markdown("**{} {} 维度**".format(DIM_EMOJI[d], DIM_NAMES[d]))
             answers[d] = []
             for i, q in enumerate(qbank[d], 1):
-                val = st.radio("Q{}: {}".format(i, q), [0, 1, 2, 3, 4],
-                               index=2, horizontal=True, key="q_{}_{}".format(d, i),
-                               label_visibility="collapsed")
-                st.caption("Q{}: {}".format(i, q))
-                answers[d].append(val)
+                st.markdown("**Q{}: {}**".format(i, q))
+                val = st.selectbox("选择你的回答", ["— 请选择 —", "0 完全否", "1 基本否", "2 不确定", "3 基本是", "4 完全是"],
+                                   key="q_{}_{}".format(d, i))
+                answers[d].append(None if val == "— 请选择 —" else int(val[0]))
         if st.button("提交今日测试", type="primary", use_container_width=True):
-            dims = {d: dim_score(answers[d]) for d in answers}
-            overall = overall_score(dims)
-            flags = red_flags_from_answers(answers)
-            gain = char.daily_checkin(dims, has_discipline_issue=len(flags) > 0)
-            # 保存记录
-            rec = DailyRecord(date=today, mode="evening", math=dims["math"],
-                              finance=dims["finance"], psychology=dims["psychology"],
-                              philosophy=dims["philosophy"], overall=overall,
-                              notes="Web 测试提交", trades_today=None)
-            import os as _os
-            _d = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "data", "diary")
-            _os.makedirs(_d, exist_ok=True)
-            with open(_os.path.join(_d, today + ".json"), "w", encoding="utf-8") as f:
-                json.dump(rec.to_dict(), f, ensure_ascii=False, indent=2)
-            st.success("打卡完成 +{} XP！今日综合分 {}（等级 {}）".format(gain, overall, grade(overall)))
-            for d, v in dims.items():
-                st.write("{}: {}分".format(DIM_NAMES[d], v))
-            if flags:
-                st.warning("今日纪律风险（客观推断）:")
-                for f in flags:
-                    st.write("- " + f)
+            if any(a is None for v in answers.values() for a in v):
+                st.error("还有题目未选择——请逐题选择你的真实状态（选择'2 不确定'也算一种回答）")
             else:
-                st.success("无客观纪律风险")
-            s_new = char.summary()
-            st.pyplot(radar_chart(s_new["dims"]))
-            # 任务标记
-            qs.complete_daily("water")
+                dims = {d: dim_score(answers[d]) for d in answers}
+                overall = overall_score(dims)
+                flags = red_flags_from_answers(answers)
+                gain = char.daily_checkin(dims, has_discipline_issue=len(flags) > 0)
+                # 保存记录
+                rec = DailyRecord(date=today, mode="evening", math=dims["math"],
+                                  finance=dims["finance"], psychology=dims["psychology"],
+                                  philosophy=dims["philosophy"], overall=overall,
+                                  notes="Web 测试提交", trades_today=None)
+                import os as _os
+                _d = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "data", "diary")
+                _os.makedirs(_d, exist_ok=True)
+                with open(_os.path.join(_d, today + ".json"), "w", encoding="utf-8") as f:
+                    json.dump(rec.to_dict(), f, ensure_ascii=False, indent=2)
+                st.success("打卡完成 +{} XP！今日综合分 {}（等级 {}）".format(gain, overall, grade(overall)))
+                for d, v in dims.items():
+                    st.write("{}: {}分".format(DIM_NAMES[d], v))
+                if flags:
+                    st.warning("今日纪律风险（客观推断）:")
+                    for f in flags:
+                        st.write("- " + f)
+                else:
+                    st.success("无客观纪律风险")
+                s_new = char.summary()
+                st.pyplot(radar_chart(s_new["dims"]))
+                # 任务标记
+                qs.complete_daily("water")
