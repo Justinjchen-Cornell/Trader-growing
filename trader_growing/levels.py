@@ -230,6 +230,116 @@ LEVELS = {
              "ans": 1, "exp": "先定主资产，把相关性最高的候选踢出局。"},
         ],
     },
+    "3-1": {
+        "chapter": 3, "name": "等权分钱", "dim": "math", "xp": 15, "figure": "equal_weight",
+        "knowledge": (
+            "等权（Equal Weight）= 每只资产分到相同金额，如 3 只标的各 1/3。\n"
+            "最简单、最不用动脑的分法：不用预测、不用计算，适合新手起步。\n"
+            "核心认知：**平均分钱 ≠ 平均分影响力**——波动 30% 的资产对组合的拉扯，"
+            "远大于波动 18% 的资产。等权只保证'金额公平'，不保证'风险公平'。\n"
+            "注意：买基金是按'份'算的，金额 ÷ 价格 = 份数，价格不同份数天差地别。"),
+        "task": {
+            "type": "calc_shares",
+            "args": {"asset": "518880.SS", "amount": 1000},
+            "text": "🧪 实战任务：等权分钱——把 3000 元三等分（每只 1000 元）买入标的池三只资产。"
+                    "今天黄金ETF（518880）收盘价 {price} 元，1000 元能买多少份？（保留整数，四舍五入）",
+            "hint": "份数 = 金额 ÷ 价格（黄金ETF 价格约 9 元，自己看数据）",
+        },
+        "quiz": [
+            {"q": "等权策略是指什么？",
+             "opts": ["每只资产分到相同金额", "每只资产分到相同份数", "全买波动最小的", "按感觉分"],
+             "ans": 0, "exp": "等权 = 金额等分，如 3 只各 1/3。"},
+            {"q": "平均分钱等于平均分影响力吗？",
+             "opts": ["等于，金额一样影响力一样", "不等于——波动大的资产实际影响力更大", "看心情", "取决于名字"],
+             "ans": 1, "exp": "波动 30% 的资产上下颠簸的幅度是 18% 的资产近两倍——'影响力'看波动，不看金额。"},
+            {"q": "等权组合里一只资产暴涨 50% 后，正确的做法是？",
+             "opts": ["什么都不用做", "卖掉一部分让它回到 1/3（再平衡）", "全仓加进去", "立刻清仓"],
+             "ans": 1, "exp": "暴涨后占比自动变大，不再等权——定期再平衡才能保持原计划（第 4 章详谈）。"},
+        ],
+    },
+    "3-2": {
+        "chapter": 3, "name": "风险平价", "dim": "finance", "xp": 15, "figure": "risk_parity",
+        "knowledge": (
+            "风险平价（Risk Parity）= 波动大的少买，波动小的多买，让每份'波动贡献'均匀。\n"
+            "公式：权重 ∝ 1/波动率。例：沪深300 年化波动 18%、黄金 30%，"
+            "则沪深300 权重 = (1/0.18) ÷ (1/0.18 + 1/0.30) ≈ 62%，黄金 ≈ 38%。\n"
+            "对比等权：等权分'金额'，风险平价分'风险'——组合整体波动更稳、回撤更小，"
+            "但涨得最猛的时候也赚得少（被低波动资产拖后腿）。\n"
+            "实测提醒：波动率天天在变，权重不是算一次就固定——定期重算。"),
+        "task": {
+            "type": "risk_parity_weight",
+            "args": {"a": "510300.SS", "b": "518880.SS"},
+            "text": "🧪 实战任务：近一年实测，沪深300ETF 年化波动 {vol_a:.0%}，黄金ETF 年化波动 {vol_b:.0%}。"
+                    "按风险平价（权重与波动成反比），谁该分到更多钱？（输入 1=沪深300，2=黄金，0=差不多）",
+            "hint": "波动小的少买还是多买？反着想：谁制造的风险小，谁就能多承担金额",
+        },
+        "quiz": [
+            {"q": "风险平价的核心思想是什么？",
+             "opts": ["波动大的少买、波动小的多买", "每只买一样多", "只买波动最大的", "追涨杀跌"],
+             "ans": 0, "exp": "让每份钱的'波动贡献'均匀——波动小的一方反而分到更多钱。"},
+            {"q": "沪深300 波动 18%、黄金 30%，风险平价下谁分到更多钱？",
+             "opts": ["黄金，因为更活跃", "沪深300，因为波动小权重高", "一样多", "无法判断"],
+             "ans": 1, "exp": "权重 ∝ 1/波动率：18% 的沪深300 拿到约 62%，30% 的黄金约 38%。"},
+            {"q": "风险平价相比等权，组合的特点是？",
+             "opts": ["波动更大", "波动更稳、回撤更小，但进攻性弱一点", "收益一定更高", "没有区别"],
+             "ans": 1, "exp": "低波动资产占大头 = 组合更稳；代价是牛市里跑不赢等权。"},
+        ],
+    },
+    "3-3": {
+        "chapter": 3, "name": "动量排名", "dim": "finance", "xp": 15, "figure": "momentum",
+        "knowledge": (
+            "动量（Momentum）= 涨得好的多买，跌的少买或不买——'强者恒强'的量化表达。\n"
+            "排名方法：用过去一段时间（如 20 日/60 日）收益率给资产排序，前几名加仓、后几名减仓。\n"
+            "陷阱：动量是**滞后**指标——涨得最好时恰恰可能是顶部。趋势反转时回撤最大，"
+            "必须配合止损（第 4 章）和样本外验证（第 6 章）才能用。\n"
+            "实测提醒：今天动量最强的是谁，看真实数据算，不要凭感觉。"),
+        "task": {
+            "type": "momentum_rank",
+            "args": {"syms": [("1", "510300.SS", "沪深300"), ("2", "513100.SS", "纳指100"), ("3", "518880.SS", "黄金")]},
+            "text": "🧪 实战任务：动量排名——按最近 20 个交易日涨跌幅给三只标的池资产排序，"
+                    "动量最强（涨得最好）的是哪只？（输入 1=沪深300，2=纳指100，3=黄金）",
+            "hint": "20 日动量 = 今天收盘 ÷ 20 天前收盘 - 1；强者的标志是 20 日涨幅最大",
+        },
+        "quiz": [
+            {"q": "动量排名用什么指标给资产排序？",
+             "opts": ["市值大小", "过去一段时间的收益率", "公司名称", "市盈率"],
+             "ans": 1, "exp": "动量 = 过去 20/60 日的实际涨跌幅，涨得好的排前面。"},
+            {"q": "动量策略最大的风险是什么？",
+             "opts": ["交易太少", "追高——买在顶部，趋势反转时回撤大", "手续费太低", "信息太少"],
+             "ans": 1, "exp": "动量是滞后指标，'最强'可能是最后一棒——必须配合止损和验证。"},
+            {"q": "按动量策略，动量最强的资产应该怎么操作？",
+             "opts": ["多买（加仓）", "卖掉", "做空", "不看它"],
+             "ans": 0, "exp": "动量策略 = 强者恒强：最强多买、最弱少买或不买。"},
+        ],
+    },
+    "3-BOSS": {
+        "chapter": 3, "name": "盈亏比之战", "dim": "philosophy", "xp": 30, "figure": "winrate", "boss": True,
+        "knowledge": (
+            "胜率是陷阱：80% 胜率的策略也可能亏钱——赢 8 次每次 +1%，输 2 次每次 -5%，"
+            "合计 -2%。赚小钱、亏大钱，胜率再高也是白搭。\n"
+            "盈亏比 = 平均盈利 ÷ 平均亏损（绝对值）。期望收益 = 胜率×平均盈利 - 败率×平均亏损，"
+            "盈亏比不够大，高胜率不赚钱。\n"
+            "第 3 章核心体检指标——简化夏普比率 =（年化收益 - 无风险利率）÷ 年化波动率："
+            "每承受 1% 波动换来多少收益。夏普为正只是及格，越高越好（第 5 章会再细看）。"),
+        "task": {
+            "type": "profit_loss_ratio",
+            "args": {"asset": "513100.SS"},
+            "text": "🧪 实战任务：BOSS 战！计算纳指100ETF 近一年（252 个交易日）日收益的盈亏比"
+                    "（平均盈利 ÷ 平均亏损），大于 1 还是小于 1？（输入 1=大于1，0=接近1，-1=小于1）",
+            "hint": "盈亏比 = 所有上涨日平均涨幅 ÷ 所有下跌日平均跌幅（取绝对值）；对照：黄金ETF 的盈亏比只有 1.04",
+        },
+        "quiz": [
+            {"q": "胜率 80% 的策略一定赚钱吗？",
+             "opts": ["一定", "不一定——要看盈亏比，赢小钱亏大钱照样亏", "80% 足够高了", "无法讨论"],
+             "ans": 1, "exp": "胜率 80% + 盈亏比 0.2 = 稳亏：赢 8 次赚 8 块，输 2 次亏 10 块。"},
+            {"q": "盈亏比是什么？",
+             "opts": ["总盈利 - 总亏损", "平均盈利 ÷ 平均亏损（绝对值）", "胜率 × 次数", "最大盈利 - 最大亏损"],
+             "ans": 1, "exp": "赚的时候平均赚多少 vs 亏的时候平均亏多少——>1 才值得下注。"},
+            {"q": "简化夏普比率衡量什么？",
+             "opts": ["赚了多少绝对收益", "每承受 1% 波动换来多少收益", "交易次数", "持仓时间"],
+             "ans": 1, "exp": "收益 ÷ 波动：把'赚得多'和'赚得稳'合并成一个数。"},
+        ],
+    },
 }
 
 
@@ -308,22 +418,26 @@ class Progress:
 # 每种 task type 用「今天的真实市场数据」计算标准答案——每天题目一样、答案不同，
 # 逼着玩家真的去看数据，而不是背答案。
 
-def solve_task(ttype):
+def solve_task(ttype, args=None):
     """计算实战任务的真实答案。返回 (answer, info) 或 (None, error)。
 
+    args 是关卡 task 里可选的参数（如指定资产/金额/候选列表）。
     info 是任务文本格式化参数（date/price/window/start/end/数值等），
     app 用它渲染题目，也用于答后展示真实数据依据。
     """
     from trader_growing.dashboard import (load_latest, common_close,
                                           window_ret, annualized_vol, pair_corr)
+    args = args or {}
     today = date.today()
 
     if ttype == "calc_shares":
-        close = load_latest("510300.SS")
+        sym = args.get("asset", "510300.SS")
+        amount = args.get("amount", 1000)
+        close = load_latest(sym)
         if close is None:
             return None, "本地数据缺失"
         px = float(close.iloc[-1])
-        return round(1000 / px), {"date": str(today), "price": round(px, 3)}
+        return round(amount / px), {"date": str(today), "price": round(px, 3)}
 
     if ttype == "ma_direction":
         close = load_latest("510300.SS")
@@ -398,3 +512,45 @@ def solve_task(ttype):
         return best[0], {"date": str(today), "window": 252,
                          "corrs": ", ".join("{}={:+.2f}".format(n, c) for _, n, c in corrs),
                          "lowest": best[1]}
+
+    if ttype == "risk_parity_weight":
+        a, b = args.get("a"), args.get("b")
+        name_a, name_b = args.get("name_a", "资产A"), args.get("name_b", "资产B")
+        va, vb = annualized_vol(load_latest(a)), annualized_vol(load_latest(b))
+        if va is None or vb is None:
+            return None, "数据不足"
+        wa = (1.0 / va) / (1.0 / va + 1.0 / vb)
+        diff = abs(va - vb) / max(va, vb)
+        ans = 1 if va < vb and diff > 0.05 else 2 if vb < va and diff > 0.05 else 0
+        return ans, {"date": str(today), "vol_a": va, "vol_b": vb,
+                     "weight_a": wa, "name_a": name_a, "name_b": name_b}
+
+    if ttype == "momentum_rank":
+        cands = args.get("syms", [("1", "510300.SS", "沪深300"),
+                                  ("2", "513100.SS", "纳指100"),
+                                  ("3", "518880.SS", "黄金")])
+        moms = []
+        for idx, sym, name in cands:
+            close = load_latest(sym)
+            if close is None or len(close) < 22:
+                return None, "数据不足"
+            moms.append((int(idx), name, float(close.iloc[-1] / close.iloc[-21] - 1)))
+        best = max(moms, key=lambda x: x[2])
+        return best[0], {"date": str(today), "window": 20,
+                         "moms": ", ".join("{}={:+.1%}".format(n, m) for _, n, m in moms),
+                         "best": best[1]}
+
+    if ttype == "profit_loss_ratio":
+        sym = args.get("asset", "513100.SS")
+        close = load_latest(sym)
+        if close is None or len(close) < 30:
+            return None, "数据不足"
+        r = close.pct_change().tail(252).dropna()
+        gains = r[r > 0].mean()
+        losses = -r[r < 0].mean()
+        if not losses:
+            return None, "数据异常（无亏损日）"
+        plr = float(gains / losses)
+        ans = 1 if plr > 1.1 else -1 if plr < 0.9 else 0
+        return ans, {"date": str(today), "window": 252, "plr": plr,
+                     "gain": float(gains), "loss": float(losses)}

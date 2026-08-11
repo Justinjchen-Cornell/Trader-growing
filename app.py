@@ -365,12 +365,20 @@ with tab10:
         """答后展示真实数据依据"""
         if "corr" in info:
             return "（黄金×沪深300 相关系数 {:.2f}）".format(info["corr"])
-        if "vol_a" in info:
+        if "weight_a" in info:
+            return "（风险平价权重：{} {:.0%} vs {} {:.0%}）".format(
+                info.get("name_a", "A"), info["weight_a"], info.get("name_b", "B"), 1 - info["weight_a"])
+        if "vol_a" in info and "weight_a" not in info:
             return "（茅台年化波动 {:.0%} vs ETF {:.0%}）".format(info["vol_a"], info["vol_b"])
         if "ret_a" in info:
             return "（纳指 {:+.1%} vs 沪深300 {:+.1%}）".format(info["ret_a"], info["ret_b"])
         if "corrs" in info:
             return "（{}，最低者 {}）".format(info["corrs"], info["lowest"])
+        if "moms" in info:
+            return "（20日动量：{}，最强 {}）".format(info["moms"], info["best"])
+        if "plr" in info:
+            return "（盈亏比 {:.2f} = 平均盈利 {:.2%} ÷ 平均亏损 {:.2%}）".format(
+                info["plr"], info.get("gain", 0), info.get("loss", 0))
         return ""
 
     def _check_level_achievements(prog_, char_):
@@ -404,7 +412,7 @@ with tab10:
 
         # ---- 实战任务（真实数据） ----
         st.markdown("### 🧪 实战任务")
-        ans_true, info = solve_task(lvl["task"]["type"])
+        ans_true, info = solve_task(lvl["task"]["type"], lvl["task"].get("args", {}))
         if ans_true is None:
             st.error("{}——先运行 python scripts/update_data.py".format(info))
             return
