@@ -124,7 +124,7 @@ python scripts/demo.py
 python scripts/update_data.py
 
 # 5. Begin your practice
-streamlit run app.py              # 🌐 Web UI (recommended! 10 tabs incl. 🎮 Learning Levels)
+streamlit run app.py              # 🌐 Web UI (recommended! 11 tabs incl. 🎮 Learning Levels & 📅 Weekly Report)
 python scripts/tg.py check        # daily check-in (enter 4 attribute scores)
 python scripts/tg.py status       # character / garden / tier
 python scripts/tg.py dashboard    # four-asset dashboard (gold/oil/CSI300/Nasdaq)

@@ -28,6 +28,7 @@ from trader_growing.models import DailyRecord
 from trader_growing.knowledge import QUESTIONS as K_QUESTIONS, KnowledgeSystem
 from trader_growing.levels import LEVELS, WORLDS, Progress, solve_task
 from trader_growing.dashboard import load_latest
+from trader_growing.weekly import WeeklyReport
 from trader_growing.questions import (QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE,
     dim_score, overall_score, grade, red_flags_from_answers,
     questions_for, max_level_for_xp, level_badges)
@@ -85,8 +86,8 @@ def growth_curve():
 st.title("🌱 Trader-growing · 交易者成长花园")
 st.caption("把交易人生变成一座花园。每天 5 分钟浇水，每周一篮果实，每季度一次修剪。")
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs(
-    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试", "🧠 知识测试", "🎮 学习关卡"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs(
+    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试", "🧠 知识测试", "🎮 学习关卡", "📅 周报"])
 
 with tab1:
     c1, c2, c3 = st.columns(3)
@@ -608,3 +609,59 @@ with tab10:
         pick = st.selectbox("选择要复战的 BOSS", boss_ids,
                             format_func=lambda l: "W{} · {}".format(l.split("-")[0], LEVELS[l]["name"]))
         _render_level(pick, LEVELS[pick], review=True, boss_revive=True)
+
+
+with tab11:
+    st.subheader("📅 修行周报（每周自动汇总）")
+    wr = WeeklyReport()
+    cur = wr.build(char)
+
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("打卡", "{} 天".format(len(cur["checkin_days"])))
+    c2.metric("首通关卡", "{} 关".format(len(cur["new_levels"])))
+    c3.metric("复习", "{} 次".format(cur["reviews"]))
+    c4.metric("BOSS 复战", "{} 次".format(cur["boss_revives"]))
+    c5.metric("周任务", "{}/{}".format(len(cur["week_quests"]), 4))
+
+    c6, c7, c8 = st.columns(3)
+    c6.metric("知识分", "{}/{}".format(cur["knowledge"]["correct"], cur["knowledge"]["total"]))
+    c7.metric("图鉴 / 徽章", "{} 条 / {} 枚".format(cur["bestiary"], cur["badges"]))
+    c8.metric("关卡进度", "{}/{} · 世界 {}/9".format(cur["total_levels"], 36, cur["total_worlds"]))
+
+    st.markdown("**本周打卡日历**")
+    wk_cal = ["✅" if d in cur["checkin_days"] else "⬜" for d in
+              ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]]
+    st.write(" ".join("{} {}".format(d, m) for d, m in zip(
+        ["周一", "周二", "周三", "周四", "周五", "周六", "周日"], wk_cal)))
+
+    if cur["new_levels"]:
+        st.markdown("**本周新通关**")
+        st.write(" → ".join("「{}」".format(n["name"]) for n in cur["new_levels"]))
+
+    st.divider()
+    st.markdown("**💡 下周建议**")
+    for tip in wr.suggestions(cur):
+        st.info(tip)
+
+    st.divider()
+    st.markdown("**📚 历史周报**")
+    hist = wr.history()
+    if not hist:
+        st.info("还没有历史周报——每周一自动生成新的一期")
+    else:
+        weeks = [h["week"] for h in hist]
+        pick_w = st.selectbox("查看历史周报", weeks, index=0)
+        h = wr.load_week(pick_w)
+        if h:
+            st.caption("{} · 打卡 {} 天 | 首通 {} 关 | 复战 {} 次 | 知识 {}/{}".format(
+                h.get("generated_at", ""), len(h.get("checkin_days", [])),
+                len(h.get("new_levels", [])), h.get("boss_revives", 0),
+                h.get("knowledge", {}).get("correct", 0), h.get("knowledge", {}).get("total", 0)))
+
+    # 自动生成本周快照（仅当还没有）
+    import os as _os
+    snap_path = _os.path.join(os.path.dirname(_os.path.abspath(__file__)), "data",
+                              "weekly_reports", cur["week"] + ".json")
+    if not _os.path.exists(snap_path):
+        wr.save_current(cur)
+        st.caption("📸 本周周报已自动保存快照")

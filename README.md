@@ -136,7 +136,7 @@ python scripts/demo.py
 python scripts/update_data.py
 
 # 5. 开始你的修行
-streamlit run app.py              # 🌐 Web 界面（推荐！10 个 tab：状态/看板/图鉴/成长/任务/徽章/同行榜/每日测试/知识测试/🎮学习关卡）
+streamlit run app.py              # 🌐 Web 界面（推荐！11 个 tab：状态/看板/图鉴/成长/任务/徽章/同行榜/每日测试/知识测试/🎮学习关卡/📅周报）
 python scripts/tg.py check        # 每日打卡（输入四维分数）
 python scripts/tg.py status       # 角色 / 花园 / 层级
 python scripts/tg.py dashboard    # 四资产看板（金/油/沪深300/纳指）
@@ -181,6 +181,7 @@ Trader-growing/
 │   ├── journal_bridge.py     # 修行日记 Skill 对接
 │   ├── strategy_bridge.py    # 中庸策略 plan 对接
 │   └── scoring_guide.py      # 四维打分参考标准
+│   └ weekly.py             # 📅 修行周报（每周汇总 + 建议）
 ├── scripts/
 │   ├── setup.py              # 一键环境准备
 │   ├── update_data.py        # 更新行情数据（关卡/看板依赖）

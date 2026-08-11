@@ -9,6 +9,7 @@
   python scripts/tg.py quests      # 任务清单（每日 + 每周）
   python scripts/tg.py quest-done <id>  # 完成每周任务
   python scripts/tg.py stats       # 偏差趋势统计
+  python scripts/tg.py week        # 修行周报（每周汇总 + 建议）
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -212,6 +213,11 @@ def cmd_quest_done():
         print("本周该任务已完成")
 
 
+def cmd_week():
+    from trader_growing.weekly import print_weekly
+    print_weekly()
+
+
 def cmd_stats():
     stats_report()
 
@@ -219,5 +225,5 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
     {"dashboard": cmd_dashboard, "plan": cmd_plan, "reconcile": cmd_reconcile,
      "status": cmd_status, "check": cmd_check, "quests": cmd_quests,
-     "quest-done": cmd_quest_done, "stats": cmd_stats}.get(cmd, cmd_status)()
+     "quest-done": cmd_quest_done, "stats": cmd_stats, "week": cmd_week}.get(cmd, cmd_status)()
 
