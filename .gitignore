@@ -1,9 +1,10 @@
 __pycache__/
 *.pyc
-data/character.json
-data/achievements.json
-data/diary/
 .env
 .venv/
 plan_today.json
 *.bak
+
+# 运行时个人数据（角色/进度/日记/知识分——隐私，不上传）
+data/
+!data/.gitkeep
