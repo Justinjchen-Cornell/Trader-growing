@@ -90,6 +90,25 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs(
     ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试", "🧠 知识测试", "🎮 学习关卡", "📅 周报"])
 
 with tab1:
+    # ---- 新手路径引导 ----
+    with st.expander("🚀 新手路径（每天 5 分钟，第 1 天从这里开始）", expanded=False):
+        from trader_growing.dashboard import load_latest as _ll
+        has_data = _ll("510300.SS") is not None
+        if not has_data:
+            st.warning("⚠️ 还没找到行情数据——学习关卡和看板都需要它。"
+                       "请先运行: `python scripts/update_data.py --source akshare`（免费，无需注册）")
+        prog_ = Progress()
+        done1 = char.last_date == str(_date.today())
+        done2 = len(prog_.completed) > 0
+        done3 = s["total_days"] >= 1
+        st.markdown("**{} 每日测试**：完成今天的 20 题修行测试（约 3 分钟）".format("✅" if done1 else "①"))
+        st.markdown("**{} 闯学习关卡**：去「🎮 学习关卡」通关 W1 第 1 关「定投播种」（约 10 分钟）".format(
+            "✅" if done2 else "②"))
+        st.markdown("**{} 看周报**：每周一看「📅 周报」，复盘本周并读建议".format("✅" if done3 else "③"))
+        if not (done1 and done2):
+            st.info("今天的目标：完成上面 {} 项，然后就可以去生活了——修行是每天 5 分钟，不是熬夜刷分。".format(
+                "2" if not done1 and not done2 else "1"))
+
     c1, c2, c3 = st.columns(3)
     c1.metric("等级", "{}".format(s["level"]))
     c2.metric("XP", "{} / {}".format(s["xp"], s["next_level_xp"] or "MAX"))
@@ -122,6 +141,11 @@ with tab2:
 
 with tab3:
     st.subheader("📜 知识图鉴（{} 条）".format(len(ENTRIES)))
+    # 打卡天数分档解锁（Web 端补钩子：解锁后显示新条目）
+    newly = best.check(char.total_days)
+    if newly:
+        st.success("📜 图鉴新解锁（打卡 {:.0f} 天）: ".format(char.total_days) +
+                   ", ".join("「{}」".format(n[1]) for n in newly))
     done_ids = set(best.unlocked)
     cats = sorted(set(e[3] for e in ENTRIES))
     for cat in cats:
@@ -303,6 +327,10 @@ with tab8:
                 st.pyplot(radar_chart(s_new["dims"]))
                 # 任务标记
                 qs.complete_daily("water")
+                # 成就检查（Web 端补钩子：打卡/连击/纪律类徽章）
+                new_ach = ach.check_all(s_new)
+                if new_ach:
+                    st.success("🏅 新成就解锁: " + ", ".join("「{}」".format(a["name"]) for a in new_ach))
 
 
 with tab9:
@@ -363,6 +391,10 @@ with tab9:
             best_.save()
             if newly:
                 st.success("📜 图鉴新解锁: {}".format(", ".join(newly)))
+        # 成就检查（Web 端补钩子）
+        new_ach = ach.check_all(char.summary())
+        if new_ach:
+            st.success("🏅 新成就解锁: " + ", ".join("「{}」".format(a["name"]) for a in new_ach))
 
     st.divider()
     st.subheader("📕 错题本（复习）")
@@ -493,6 +525,17 @@ with tab10:
 
         with st.expander("📖 知识卡（先学）", expanded=True):
             st.markdown(lvl["knowledge"])
+            # 真实数据配图（概念有图可看）
+            if lvl.get("chart"):
+                from trader_growing.charts import CHART_FNS
+                fig = CHART_FNS.get(lvl["chart"])
+                if fig:
+                    try:
+                        f = fig()
+                        if f is not None:
+                            st.pyplot(f)
+                    except Exception:
+                        pass  # 图渲染失败不阻塞关卡
 
         # ---- 实战任务（真实数据） ----
         st.markdown("### 🧪 实战任务")
@@ -576,39 +619,38 @@ with tab10:
                 else:
                     st.warning("测验未通过（{}/3）——重新读知识卡再试".format(sum(ok_list)))
 
-    # ---- 下一个未完成关卡 ----
-    lid, cur = prog.next_level()
-    if cur is None:
-        st.success("🎉 全部关卡已完成！下方复习区可每天再战真实数据任务")
-    else:
-        _render_level(lid, cur)
+    # ---- 当前关卡（主线） ----
+    with st.expander("🎯 当前关卡 · 推主线（首通 +15~30 XP）", expanded=True):
+        lid, cur = prog.next_level()
+        if cur is None:
+            st.success("🎉 全部关卡已完成！下方复习区可每天再战真实数据任务")
+        else:
+            _render_level(lid, cur)
 
     # ---- 已通关关卡 · 每日复习 ----
-    st.divider()
-    st.subheader("🔄 已通关关卡 · 每日复习（+5 XP，每日每关限一次）")
-    if not prog.completed:
-        st.info("通关第一个关卡后，这里可以每天复习——市场数据每天在变，答案每天不同")
-    else:
-        pick = st.selectbox("选择要复习的关卡", prog.completed,
-                            format_func=lambda l: "{} · {}".format(l, LEVELS[l]["name"]))
-        _render_level(pick, LEVELS[pick], review=True)
+    with st.expander("🔄 每日复习（+5 XP/关/天，答案随行情变）", expanded=False):
+        if not prog.completed:
+            st.info("通关第一个关卡后，这里可以每天复习——市场数据每天在变，答案每天不同")
+        else:
+            pick = st.selectbox("选择要复习的关卡", prog.completed,
+                                format_func=lambda l: "{} · {}".format(l, LEVELS[l]["name"]))
+            _render_level(pick, LEVELS[pick], review=True)
 
     # ---- BOSS 复战（每周） ----
-    st.divider()
-    st.subheader("⚔️ BOSS 复战（每周 · 用本周行情再战 BOSS）")
-    st.caption("已通关的 BOSS 每周可复战一次：复战 +5 XP + 周任务「BOSS 复战」+30 XP（每周限一次）")
-    boss_ids = [l for l in prog.completed if l.endswith("-BOSS")]
-    if not boss_ids:
-        st.info("先通关任意一个 BOSS 关（如 W1 的「过拟合挑战」），即可解锁每周复战")
-    else:
-        done_this_week = [l for l in boss_ids if prog.boss_revive_done_this_week(l)]
-        if done_this_week:
-            st.success("本周已复战: " + ", ".join("「{}」".format(LEVELS[l]["name"]) for l in done_this_week))
+    with st.expander("⚔️ BOSS 复战（每周 +30 XP，用本周行情再战 BOSS）", expanded=False):
+        st.caption("已通关的 BOSS 每周可复战一次：复战 +5 XP + 周任务「BOSS 复战」+30 XP（每周限一次）")
+        boss_ids = [l for l in prog.completed if l.endswith("-BOSS")]
+        if not boss_ids:
+            st.info("先通关任意一个 BOSS 关（如 W1 的「过拟合挑战」），即可解锁每周复战")
         else:
-            st.info("本周还未复战任何 BOSS——选一个开打！")
-        pick = st.selectbox("选择要复战的 BOSS", boss_ids,
-                            format_func=lambda l: "W{} · {}".format(l.split("-")[0], LEVELS[l]["name"]))
-        _render_level(pick, LEVELS[pick], review=True, boss_revive=True)
+            done_this_week = [l for l in boss_ids if prog.boss_revive_done_this_week(l)]
+            if done_this_week:
+                st.success("本周已复战: " + ", ".join("「{}」".format(LEVELS[l]["name"]) for l in done_this_week))
+            else:
+                st.info("本周还未复战任何 BOSS——选一个开打！")
+            pick = st.selectbox("选择要复战的 BOSS", boss_ids,
+                                format_func=lambda l: "W{} · {}".format(l.split("-")[0], LEVELS[l]["name"]))
+            _render_level(pick, LEVELS[pick], review=True, boss_revive=True)
 
 
 with tab11:

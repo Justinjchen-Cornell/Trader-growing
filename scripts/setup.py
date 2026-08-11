@@ -35,9 +35,16 @@ def install_deps():
     r = subprocess.run([sys.executable, "-m", "pip", "install", "-r", req],
                        capture_output=True, text=True)
     if r.returncode == 0:
-        print("  ✅ 依赖安装完成（streamlit / pandas / numpy / matplotlib / rich / pyyaml）")
+        print("  ✅ 依赖安装完成（streamlit / pandas / numpy / matplotlib / pyarrow / akshare ...）")
     else:
         print("  ⚠️ 依赖安装可能有问题: {}".format(r.stderr[-200:]))
+    # 关键依赖自检（parquet 读写必需）
+    try:
+        import pyarrow  # noqa: F401
+        print("  ✅ pyarrow 可用（parquet 读写正常）")
+    except ImportError:
+        print("  ❌ pyarrow 未装好——看板/学习关卡将无法读取数据！请重试 pip install -r requirements.txt")
+        return False
     return r.returncode == 0
 
 

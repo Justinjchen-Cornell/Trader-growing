@@ -71,6 +71,8 @@
 
 通关一章解锁下一章世界，与修行日记/知识测试/同行榜数据互通。
 
+**💡 数据源**：`python scripts/update_data.py --source akshare`（免费、无需注册，个股/ETF 全覆盖）；安装 Wind skill 后自动切换 Wind。
+
 ---
 
 ## 🏡 成长花园（Growing 的双关）
@@ -133,7 +135,7 @@ python scripts/setup.py
 python scripts/demo.py
 
 # 4. 更新行情数据（学习关卡/看板依赖真实数据）
-python scripts/update_data.py
+python scripts/update_data.py --source akshare   # 免费免注册；有 Wind skill 时自动用 Wind
 
 # 5. 开始你的修行
 streamlit run app.py              # 🌐 Web 界面（推荐！11 个 tab：状态/看板/图鉴/成长/任务/徽章/同行榜/每日测试/知识测试/🎮学习关卡/📅周报）
@@ -250,6 +252,7 @@ L3 组合者   四资产风险平价 + 波动率过滤  （解锁：L2 连续 60
 - **V3.0**：第 7 章 4 关（整手 / 滑点 / 成本层叠 / 执行落差 BOSS），共 28 关 ✅
 - **V3.1**：第 8 章 4 关（监控 / 诊断 / 假设对照 / 归因 BOSS），共 32 关 ✅
 - **V3.2**：第 9 章 4 关（因子 / IC / 失效点 / 评估 BOSS），**9 世界 36 关全部通关** ✅
+- **V4.0-V5.0**：BOSS 复战 / 修行周报 / 同行榜关卡对比 / 体验大修（选项均衡、解锁钩子、akshare 回退、知识卡配图、新手引导） ✅
 
 详见 [docs/ROADMAP.md](docs/ROADMAP.md)。
 
