@@ -11,8 +11,19 @@ def strategy_dir():
     env = os.environ.get("TRADER_STRATEGY_DIR")
     if env:
         return env
-    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "..", "zhongyong_strategy")
+    # 常见位置探测
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidates = [
+        os.path.join(base, "..", "zhongyong_strategy"),
+        os.path.join(os.path.expanduser("~"), "Documents", "陈嘉-资料备份", "04.SecurityAI",
+                     "00.GitHub", "xquant-beginner-main", "策略", "zhongyong_strategy"),
+        os.path.join(os.path.expanduser("~"), "Documents", "陈嘉-资料备份", "04.SecurityAI",
+                     "00.GitHub", "Trader-growing", "zhongyong_strategy"),
+    ]
+    for c in candidates:
+        if os.path.exists(os.path.join(c, "plan.py")):
+            return c
+    return candidates[0]
 
 
 def default_plan_path():
