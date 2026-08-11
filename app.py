@@ -400,6 +400,18 @@ with tab10:
             return "（奇数年 {odd:+.1%} vs 偶数年 {even:+.1%}——切法一变就翻脸）".format(**info)
         if "hs" in info:
             return "（真实锚点：沪深300 {hs:+.1%} / 纳指 {nq:+.1%} / 黄金 {gold:+.1%}）".format(**info)
+        if "shares" in info:
+            max_shares = int(info["shares"] // info["lot"]) * info["lot"]
+            gap = info["target"] - max_shares * info["price"]
+            return "（{target:,} 元 ÷ {price} 元 = {shares:.0f} 份 → 整手 {lot} 取整 → {max_shares:.0f} 份，缺口 {gap:.0f} 元）".format(
+                max_shares=max_shares, gap=gap, **info)
+        if "commission" in info:
+            return "（佣金 {commission:.2f}（最低 5 元生效）+ 滑点 {slippage:.2f} = {total:.2f} 元）".format(**info)
+        if "pct" in info and "price" in info and "date" in info:
+            return "（滑点 +{pct:.1%}：{price} → {:.3f}）".format(info["price"] * (1 + info["pct"]), **info)
+        if "cost" in info and "ret" in info:
+            return "（回测 {ret:+.1%} - 年成本 {cost:.1%} = {:+.1%}）".format(
+                info["ret"] - info["cost"], **info)
         if "ret" in info and "dd" not in info:
             return "（近一年真实涨幅 {ret:+.1%}）".format(**info)
         return ""
