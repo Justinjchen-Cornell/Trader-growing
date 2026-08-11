@@ -181,7 +181,7 @@ Trader-growing/
 │   ├── journal_bridge.py     # 修行日记 Skill 对接
 │   ├── strategy_bridge.py    # 中庸策略 plan 对接
 │   └── scoring_guide.py      # 四维打分参考标准
-│   └ weekly.py             # 📅 修行周报（每周汇总 + 建议）
+│   └── weekly.py             # 📅 修行周报（每周汇总 + 建议）
 ├── scripts/
 │   ├── setup.py              # 一键环境准备
 │   ├── update_data.py        # 更新行情数据（关卡/看板依赖）
