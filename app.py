@@ -25,6 +25,8 @@ from trader_growing.stats import analyze, red_flag_count
 from trader_growing.peerboard import PeerBoard
 from trader_growing.models import DailyRecord
 from trader_growing.knowledge import QUESTIONS as K_QUESTIONS, KnowledgeSystem
+from trader_growing.levels import LEVELS, WORLDS, Progress
+from trader_growing.dashboard import load_latest
 from trader_growing.questions import (QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE,
     dim_score, overall_score, grade, red_flags_from_answers,
     questions_for, max_level_for_xp, level_badges)
@@ -82,8 +84,8 @@ def growth_curve():
 st.title("🌱 Trader-growing · 交易者成长花园")
 st.caption("把交易人生变成一座花园。每天 5 分钟浇水，每周一篮果实，每季度一次修剪。")
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(
-    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试", "🧠 知识测试"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs(
+    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试", "🧠 知识测试", "🎮 学习关卡"])
 
 with tab1:
     c1, c2, c3 = st.columns(3)
@@ -342,3 +344,126 @@ with tab9:
                 K_QUESTIONS[[q for q in K_QUESTIONS if q["id"]==w["id"]][0]]["opts"][w["correct_ans"]]))
     else:
         st.info("暂无错题——继续保持！")
+
+
+with tab10:
+    st.subheader("🎮 学习关卡：把书变成游戏，把市场变成教材")
+    prog = Progress()
+    # 世界地图
+    cols = st.columns(9)
+    for i, ch in enumerate(sorted(WORLDS)):
+        done_n, total_n = prog.world_progress(ch)
+        with cols[i]:
+            mark = "✅" if done_n == total_n else "🔒" if ch > 1 and done_n == 0 else "🌍"
+            st.markdown("{} W{} {}".format(mark, ch, WORLDS[ch]["name"]))
+    st.caption("完成第 1 章全部关卡可解锁第 2 章世界")
+
+    cur = prog.next_level()
+    if cur is None:
+        st.success("🎉 全部关卡已完成！等待下一章内容……")
+    else:
+        lid = [k for k, v in LEVELS.items() if v == cur][0]
+        ch = cur["chapter"]
+        # 世界锁检查：第 2 章起需要前一章通关
+        if ch > 1:
+            prev_done, prev_total = prog.world_progress(ch - 1)
+            if prev_done < prev_total:
+                st.warning("🔒 世界 {} 尚未解锁——先完成世界 {} 的全部关卡".format(
+                    WORLDS[ch]["name"], WORLDS[ch - 1]["name"]))
+                st.stop()
+
+        st.markdown("### {} · {} {}".format(
+            WORLDS[ch]["name"], "BOSS" if cur.get("boss") else "关卡", cur["name"]))
+        st.caption("奖励: +{} XP | 训练维度: {} | {}".format(
+            cur["xp"], cur["dim"], WORLDS[ch]["title"]))
+        st.progress(prog.world_progress(ch)[0] / prog.world_progress(ch)[1])
+
+        with st.expander("📖 知识卡（先学）", expanded=True):
+            st.markdown(cur["knowledge"])
+
+        # ---- 实战任务 ----
+        st.markdown("### 🧪 实战任务")
+        t = cur["task"]
+        date_str = str(_date.today())
+
+        # 实时取材
+        def _real_answer(ttype):
+            close = load_latest("510300.SS")
+            if close is None:
+                return None, "无数据"
+            px = float(close.iloc[-1])
+            if ttype == "calc_shares":
+                return round(1000 / px), px
+            if ttype == "ma_direction":
+                ma20 = float(close.rolling(20).mean().iloc[-1])
+                return (1 if px > ma20 else -1), px
+            if ttype == "vs_benchmark":
+                ref = close.iloc[-252] if len(close) > 252 else close.iloc[0]
+                diff = px / float(ref) - 1
+                return (1 if diff > 0.005 else -1 if diff < -0.005 else 0), px
+            if ttype == "overfit_choice":
+                return 2, px
+            return None, px
+
+        ans_true, px = _real_answer(t["type"])
+        if ans_true is None:
+            st.error("本地数据缺失——先运行 python scripts/update_data.py")
+            st.stop()
+        st.markdown(t["text"].format(date=date_str, price=round(px, 3),
+                                      ref=date_str[:4] + "-" + date_str[5:7]))
+        st.caption("提示: " + t.get("hint", ""))
+
+        task_key = "task_done_" + lid
+        if prog.done(lid):
+            st.success("本关已完成 ✅")
+        else:
+            user_input = st.text_input("你的答案", key="task_in_" + lid)
+            if st.button("提交任务答案", key="task_btn_" + lid):
+                try:
+                    val = int(user_input.strip())
+                except ValueError:
+                    st.error("请输入数字")
+                    st.stop()
+                if val == ans_true:
+                    st.session_state[task_key] = True
+                    st.success("✅ 任务正确！真实答案就是 {}".format(ans_true))
+                else:
+                    st.session_state[task_key] = False
+                    st.error("❌ 不对，再想想。真实答案是 {}".format(ans_true))
+
+            # ---- 测验 ----
+            if st.session_state.get(task_key):
+                st.markdown("### 🧠 关卡测验（答对 2/3 通关）")
+                quiz_ans = {}
+                for i, q in enumerate(cur["quiz"], 1):
+                    quiz_ans[i] = st.selectbox(
+                        "Q{}: {}".format(i, q["q"]), ["— 请选择 —"] + q["opts"],
+                        key="quiz_{}_{}".format(lid, i))
+                if st.button("提交测验", key="quiz_btn_" + lid):
+                    n_ok = 0
+                    for i, q in enumerate(cur["quiz"], 1):
+                        pick = quiz_ans[i + 1] if False else None
+                    # 简化：逐题判分
+                    ok_list = []
+                    for i, q in enumerate(cur["quiz"], 1):
+                        pick = st.session_state.get("quiz_{}_{}".format(lid, i))
+                        ok = pick is not None and pick != "— 请选择 —" and q["opts"].index(pick) == q["ans"]
+                        ok_list.append(ok)
+                        if ok:
+                            st.success("Q{} ✅ {}".format(i, q["exp"]))
+                        else:
+                            st.error("Q{} ❌ 正确答案: {} | {}".format(i, q["opts"][q["ans"]], q["exp"]))
+                    if sum(ok_list) >= 2:
+                        if prog.complete(lid):
+                            char.xp += cur["xp"]
+                            char.dims[cur["dim"]] = min(100, char.dims[cur["dim"]] + 5)
+                            char.save()
+                            best_ = Bestiary()
+                            if cur["figure"] not in best_.unlocked:
+                                best_.unlocked.append(cur["figure"])
+                                best_.save()
+                        st.balloons()
+                        st.success("🎉 关卡通关！+{} XP | 维度 {} +5 | 图鉴「{}」点亮".format(
+                            cur["xp"], cur["dim"], cur["figure"]))
+                    else:
+                        st.warning("测验未通过（{}/3）——重新读知识卡再试".format(sum(ok_list)))
