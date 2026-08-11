@@ -379,6 +379,11 @@ with tab10:
         if "plr" in info:
             return "（盈亏比 {:.2f} = 平均盈利 {:.2%} ÷ 平均亏损 {:.2%}）".format(
                 info["plr"], info.get("gain", 0), info.get("loss", 0))
+        if "dd" in info:
+            return "（真实路径：峰值 {hi:.3f} → 谷底 {lo:.3f}，最大回撤 {dd:.0%}，全年 {ret:+.1%}）".format(
+                **info)
+        if "ret" in info and "dd" not in info:
+            return "（近一年真实涨幅 {ret:+.1%}）".format(**info)
         return ""
 
     def _check_level_achievements(prog_, char_):

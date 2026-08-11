@@ -73,6 +73,18 @@ def pair_corr(close_a, close_b, days=252):
     return float(ra.loc[j].corr(rb.loc[j]))
 
 
+def max_drawdown(close, days=252):
+    """近 N 日最大回撤：返回 (dd, 峰值价, 谷底价)。dd 为负值"""
+    if close is None or len(close) < 30:
+        return None
+    s = close.tail(days + 1)
+    roll = s / s.cummax() - 1
+    dd = float(roll.min())
+    trough_idx = roll.idxmin()
+    peak_idx = s.loc[:trough_idx].idxmax()
+    return dd, float(s.loc[peak_idx]), float(s.loc[trough_idx])
+
+
 def signal_for(close):
     """轻信号：MA20 趋势 + 动量方向"""
     if close is None or len(close) < 60:
