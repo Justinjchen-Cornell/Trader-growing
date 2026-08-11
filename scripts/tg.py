@@ -27,7 +27,9 @@ from trader_growing.bestiary import Bestiary
 from trader_growing.quests import QuestSystem, DAILY_QUESTS, WEEKLY_QUESTS
 from trader_growing.stats import report as stats_report
 from trader_growing.scoring_guide import show_guide
-from trader_growing.questions import QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE, dim_score, overall_score, grade, red_flags_from_answers
+from trader_growing.questions import (QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE,
+    dim_score, overall_score, grade, red_flags_from_answers,
+    questions_for, max_level_for_xp, level_badges)
 from trader_growing.models import DailyRecord
 import json
 
@@ -115,10 +117,17 @@ def cmd_check():
     print("  维度分自动计算（原始分/满分*100），拒绝拍脑袋")
     print()
 
+    # 难度分级：按角色 XP 解锁
+    unlock = max_level_for_xp(char.xp)
+    qbank = questions_for(unlock)
+    print("  本次题目难度: {}".format(level_badges(unlock)))
+    print("  升级后可解锁更难题目（XP 300 解锁进阶，600 解锁专业）")
+    print()
+
     answers = {}
     dims = {}
     for d in ["math", "finance", "psychology", "philosophy"]:
-        print("  {} {} 维度（5 题）".format(DIM_EMOJI.get(d, ""), DIM_NAMES[d]))
+        print("  {} {} 维度（{} 题）".format(DIM_EMOJI.get(d, ""), DIM_NAMES[d], len(qbank[d])))
         print("  " + "-" * 45)
         if quick:
             show_guide(d)
@@ -127,10 +136,10 @@ def cmd_check():
                 dims[d] = float(v) if v else 50.0
             except ValueError:
                 dims[d] = 50.0
-            answers[d] = [2] * 5
+            answers[d] = [2] * 6
         else:
             qs = []
-            for i, q in enumerate(QUESTIONS[d], 1):
+            for i, q in enumerate(qbank[d], 1):
                 print("  Q{}: {}".format(i, q))
                 qs.append(_ask_score(q))
             answers[d] = qs
