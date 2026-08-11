@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.5.0-blue" alt="version">
+  <img src="https://img.shields.io/badge/version-3.2.0-blue" alt="version">
   <img src="https://img.shields.io/badge/python-3.10%2B-green" alt="python">
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="license">
   <img src="https://img.shields.io/badge/platform-local--first-orange" alt="local-first">
@@ -58,6 +58,17 @@
 第 7 章「现实世界」4 关（整手订单→滑点→成本层叠→BOSS 执行落差）、
 第 8 章「守护者」4 关（监控仪表盘→诊断三问→假设对照→BOSS 归因总账）、
 第 9 章「研究者」4 关（因子初识→IC 初测→因子失效点→BOSS 因子评估总账）。
+
+**📊 现状：9 世界 × 4 关 = 36 关全部上线**（V3.2）
+
+| 维度 | 说明 |
+|------|------|
+| 🌍 世界锁 | 通关一章解锁下一章世界 |
+| 🧪 真实数据任务 | 30+ 种题型：定投份数 / 波动对比 / 相关性 / 风险平价 / 动量 / 盈亏比 / 止损止盈价 / 回撤 / 超额 / 样本内外 / Walk-forward / 整手 / 滑点 / 成本层叠 / 归因 / 条件分析 / 因子 IC……**答案随今日行情每天变化** |
+| ✅ 首通奖励 | +15~30 XP + 维度 +5 + 图鉴点亮 |
+| 🔄 每日复习 | 已通关关卡每天可再战（+5 XP/关/天），逼你真正看数据 |
+| 🏅 关卡成就 | 初出茅庐 / 新手村毕业 / 选品大师 / 章节行者 / 闯关学霸 / 世界征服者 |
+
 通关一章解锁下一章世界，与修行日记/知识测试/同行榜数据互通。
 
 ---
@@ -95,14 +106,16 @@
 | **XP / 等级** | 菜鸟 → 学徒 → 熟练 → 专家 → 大师 | 成长看得见 |
 | **连击奖励** | 连续打卡 ≥3 天，XP ×1.5 | 坚持有回报 |
 | **温和惩罚** | 有纪律偏差的日子 XP 减半（不归零） | 失败也是经验 |
-| **成就徽章** | 零冲动 / 割肉勇士 / 空仓大师 / 四维开花…… | 把"认错"也变成荣誉 |
+| **成就徽章** | 零冲动 / 割肉勇士 / 空仓大师 / 四维开花 / 世界征服者…… | 把"认错"也变成荣誉 |
 | **每日 5 分钟** | 超时提醒"今天的修行够了" | 节制是最高级的自律 |
 
-已内置 7 枚初始徽章，例如：
+已内置 **13 枚徽章**（7 枚修行 + 6 枚学习关卡），例如：
 
 - 🏅 **割肉勇士**：严格执行止损 10 次——把最难的"认错"变成值得炫耀的成就
 - 🏅 **空仓大师**：遵守"空仓也是持仓"哲学 30 天——什么都不做，也是一种修为
 - 🏅 **四维开花**：四个维度同时 ≥ 70——不允许偏科
+- 🏅 **新手村毕业**：通关第 1 章世界全部关卡——量化入门第一步
+- 🏅 **世界征服者**：通关全部 9 个世界 36 关——这本书，你真的学完了
 
 ---
 
@@ -119,8 +132,11 @@ python scripts/setup.py
 # 3. 跑全流程演示（3 天模拟：打卡 → 对账 → 成长）
 python scripts/demo.py
 
-# 4. 开始你的修行
-streamlit run app.py              # 🌐 Web 界面（推荐！花园/看板/图鉴/成长曲线）
+# 4. 更新行情数据（学习关卡/看板依赖真实数据）
+python scripts/update_data.py
+
+# 5. 开始你的修行
+streamlit run app.py              # 🌐 Web 界面（推荐！10 个 tab：状态/看板/图鉴/成长/任务/徽章/同行榜/每日测试/知识测试/🎮学习关卡）
 python scripts/tg.py check        # 每日打卡（输入四维分数）
 python scripts/tg.py status       # 角色 / 花园 / 层级
 python scripts/tg.py dashboard    # 四资产看板（金/油/沪深300/纳指）
@@ -146,20 +162,38 @@ Demo 输出示例（有纪律偏差的那一天）：
 
 ```
 Trader-growing/
+├── app.py                    # 🌐 Web 界面（Streamlit，10 个 tab）
 ├── trader_growing/           # 核心包
 │   ├── character.py          # 等级 / XP / 连击 / 四维属性
-│   ├── achievements.py       # 成就徽章系统
+│   ├── achievements.py       # 成就徽章系统（13 枚）
 │   ├── models.py             # 数据模型（日记 / 计划 / 对账）
 │   ├── reconcile.py          # 纪律对账核心（计划 vs 实际）
-│   └── garden.py             # ASCII 成长花园
+│   ├── garden.py             # ASCII 成长花园
+│   ├── dashboard.py          # 四资产看板 + 数据助手（波动/相关性/回撤/年度收益）
+│   ├── levels.py             # 🎮 学习关卡：9 世界 36 关 + 真实数据任务引擎
+│   ├── questions.py          # 每日修行测试题库（分级）
+│   ├── knowledge.py          # 客观知识测试题库
+│   ├── bestiary.py           # 📜 知识图鉴（34 条）
+│   ├── quests.py             # 每日/每周任务
+│   ├── tiers.py              # 真钱分级解锁（L0-L3）
+│   ├── stats.py              # 偏差趋势统计
+│   ├── peerboard.py          # 匿名同行榜（本地优先）
+│   ├── journal_bridge.py     # 修行日记 Skill 对接
+│   ├── strategy_bridge.py    # 中庸策略 plan 对接
+│   └── scoring_guide.py      # 四维打分参考标准
 ├── scripts/
+│   ├── setup.py              # 一键环境准备
+│   ├── update_data.py        # 更新行情数据（关卡/看板依赖）
 │   ├── demo.py               # 全流程演示
-│   └── daily_flow.py         # 每日流程 CLI
+│   ├── daily_flow.py         # 每日流程 CLI
+│   └── tg.py                 # 主 CLI（check/status/dashboard/plan/reconcile/quests/stats）
 ├── assets/
 │   └── assets.yaml           # 四资产配置（金 / 油 / 沪深300 / 纳指）
-├── data/                     # 运行时数据（gitignore）
+├── data/                     # 运行时数据（gitignore，个人隐私）
 ├── docs/
-│   └── ROADMAP.md            # 路线图
+│   ├── ROADMAP.md            # 路线图
+│   ├── DAILY_RITUAL.md       # 每日修行流程
+│   └── WIND_SETUP.md         # Wind 数据源安装
 ├── README.md                 # 本文件（中文）
 ├── README.en.md              # English
 └── requirements.txt

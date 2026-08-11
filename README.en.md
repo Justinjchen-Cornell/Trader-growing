@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.5.0-blue" alt="version">
+  <img src="https://img.shields.io/badge/version-3.2.0-blue" alt="version">
   <img src="https://img.shields.io/badge/python-3.10%2B-green" alt="python">
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="license">
   <img src="https://img.shields.io/badge/platform-local--first-orange" alt="local-first">
@@ -33,6 +33,33 @@ We split trading psychology into four RPG-style attributes, and give you instant
 > 🎮 **Not casino-style gamification** (gacha / leaderboards / anxiety) — **cultivation-style gamification**:
 > losses are not punished, they are reframed as XP. Daily sessions are capped at 5 minutes;
 > go over and the system says — "You've cultivated enough today. Go live."
+
+**🎮 Learning Levels** (turn the book *Everyone Is a Quant Trader* into a dungeon crawler):
+
+```
+🌍 9 worlds (one per book chapter) → each level = knowledge card + live-data task + quiz
+🧪 Tasks are graded against TODAY's real market data — the answers change every day
+✅ First clear: +15~30 XP + attribute +5 + bestiary entry | Daily review: +5 XP
+```
+
+**Status (V3.2): all 9 worlds × 4 levels = 36 levels are live.**
+
+| World | Levels (level → BOSS) |
+|-------|----------------------|
+| W1 新手村 Novice | 定投播种 → 基准对决 → 均线信号 → **过拟合挑战** |
+| W2 选什么 Selection | 个股vsETF → 中美锚定 → 相关性探秘 → **标的池挑战** |
+| W3 分多少 Sizing | 等权分钱 → 风险平价 → 动量排名 → **盈亏比之战** |
+| W4 何时动 Timing | 再平衡 → 止损 → 止盈 → **锯齿效应** |
+| W5 体检台 Inspection | 基准对比 → 逐年拆解 → 回撤深度 → **参数敏感性** |
+| W6 陷阱迷宫 Overfit Maze | 样本内外 → Walk-forward → 交叉验证 → **规则负担** |
+| W7 现实世界 Reality | 整手订单 → 滑点 → 成本层叠 → **执行落差** |
+| W8 守护者 Guardian | 监控仪表盘 → 诊断三问 → 假设对照 → **归因总账** |
+| W9 研究者 Researcher | 因子初识 → IC 初测 → 因子失效点 → **因子评估总账** |
+
+30+ live-data task types: DCA shares, volatility & return comparisons, correlation, risk parity,
+momentum ranking, profit/loss ratio, stop/take prices, max drawdown, excess return, in/out-of-sample,
+walk-forward, lot sizing (100-share lots), slippage, cost stacking, attribution math, conditional
+hypothesis tests, factor IC (Spearman), and more. Completing a chapter unlocks the next world.
 
 ---
 
@@ -93,8 +120,11 @@ python scripts/setup.py
 # 3. Run the full demo (3 simulated days: check-in → reconcile → growth)
 python scripts/demo.py
 
-# 4. Begin your practice
-streamlit run app.py              # 🌐 Web UI (recommended! garden/dashboard/bestiary/growth)
+# 4. Refresh market data (levels & dashboard depend on it)
+python scripts/update_data.py
+
+# 5. Begin your practice
+streamlit run app.py              # 🌐 Web UI (recommended! 10 tabs incl. 🎮 Learning Levels)
 python scripts/tg.py check        # daily check-in (enter 4 attribute scores)
 python scripts/tg.py status       # character / garden / tier
 python scripts/tg.py dashboard    # four-asset dashboard (gold/oil/CSI300/Nasdaq)
@@ -120,20 +150,38 @@ Demo output (the day with discipline issues):
 
 ```
 Trader-growing/
+├── app.py                    # 🌐 Web UI (Streamlit, 10 tabs)
 ├── trader_growing/           # core package
 │   ├── character.py          # level / XP / streak / four attributes
-│   ├── achievements.py       # badge system
+│   ├── achievements.py       # badge system (13 badges)
 │   ├── models.py             # data models (diary / plan / reconcile)
 │   ├── reconcile.py          # discipline reconciliation (plan vs actual)
-│   └── garden.py             # ASCII growth garden
+│   ├── garden.py             # ASCII growth garden
+│   ├── dashboard.py          # four-asset dashboard + data helpers (vol/corr/drawdown/yearly)
+│   ├── levels.py             # 🎮 learning levels: 9 worlds / 36 levels + live-data task engine
+│   ├── questions.py          # daily cultivation test bank (tiered)
+│   ├── knowledge.py          # objective knowledge test bank
+│   ├── bestiary.py           # 📜 knowledge bestiary (34 entries)
+│   ├── quests.py             # daily / weekly quests
+│   ├── tiers.py              # tiered real-money unlocking (L0-L3)
+│   ├── stats.py              # discipline trend stats
+│   ├── peerboard.py          # anonymous peer board (local-first)
+│   ├── journal_bridge.py     # cultivation journal Skill integration
+│   ├── strategy_bridge.py    # Zhongyong strategy plan integration
+│   └── scoring_guide.py      # four-attribute scoring reference
 ├── scripts/
+│   ├── setup.py              # one-click environment setup
+│   ├── update_data.py        # refresh market data (levels & dashboard depend on it)
 │   ├── demo.py               # end-to-end demo
-│   └── daily_flow.py         # daily CLI
+│   ├── daily_flow.py         # daily CLI
+│   └── tg.py                 # main CLI (check/status/dashboard/plan/reconcile/quests/stats)
 ├── assets/
 │   └── assets.yaml           # four assets (gold / oil / CSI300 / Nasdaq)
-├── data/                     # runtime data (gitignored)
+├── data/                     # runtime data (gitignored, personal privacy)
 ├── docs/
-│   └── ROADMAP.md            # roadmap
+│   ├── ROADMAP.md            # roadmap
+│   ├── DAILY_RITUAL.md       # daily practice flow
+│   └── WIND_SETUP.md         # Wind data source setup
 ├── README.md                 # Chinese
 ├── README.en.md              # this file (English)
 └── requirements.txt
@@ -177,10 +225,12 @@ Data models are JSON-compatible with these components for direct integration.
 
 ## 🗺️ Roadmap
 
-- **V0.5 (now)**: character / badges / reconcile / garden / demo ✅
-- **V1.0**: four-asset dashboard + tiered real-money unlocking + strategy plan integration
-- **V1.5**: bestiary system (knowledge entries from the book) + weekly factor experiment quests
-- **V2.0**: web UI + optional anonymous peer board
+- **V0.5**: character / badges / reconcile / garden / demo ✅
+- **V1.0**: four-asset dashboard + tiered real-money unlocking + strategy plan integration ✅
+- **V1.5**: bestiary system (knowledge entries from the book) + weekly factor experiment quests ✅
+- **V2.0**: web UI (10 tabs) + optional anonymous peer board ✅
+- **V2.5-V2.9**: learning levels — chapters 1-6 (24 levels) + daily review + level achievements ✅
+- **V3.0-V3.2**: chapters 7-9 — **all 9 worlds / 36 levels complete** ✅
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
 
