@@ -24,6 +24,7 @@ from trader_growing.journal_bridge import load_all
 from trader_growing.stats import analyze, red_flag_count
 from trader_growing.peerboard import PeerBoard
 from trader_growing.models import DailyRecord
+from trader_growing.knowledge import QUESTIONS as K_QUESTIONS, KnowledgeSystem
 from trader_growing.questions import (QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE,
     dim_score, overall_score, grade, red_flags_from_answers,
     questions_for, max_level_for_xp, level_badges)
@@ -81,8 +82,8 @@ def growth_curve():
 st.title("🌱 Trader-growing · 交易者成长花园")
 st.caption("把交易人生变成一座花园。每天 5 分钟浇水，每周一篮果实，每季度一次修剪。")
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
-    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(
+    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试", "🧠 知识测试"])
 
 with tab1:
     c1, c2, c3 = st.columns(3)
@@ -271,3 +272,76 @@ with tab8:
                 st.pyplot(radar_chart(s_new["dims"]))
                 # 任务标记
                 qs.complete_daily("water")
+
+
+with tab9:
+    st.subheader("🧠 客观知识测试（标准答案，骗不了自己）")
+    ks = KnowledgeSystem()
+    unlock = max_level_for_xp(char.xp)
+    pool = [q for q in K_QUESTIONS if q["level"] <= unlock]
+    st.info("当前解锁：{}（{} 题）| 知识分：**{}**（做对 {}/{}）".format(
+        level_badges(unlock), len(pool), ks.score(), ks.correct, ks.total))
+
+    # 今日抽 5 题（按主题轮换，避免重复）
+    import random
+    seen = st.session_state.get("kq_done", [])
+    fresh = [q for q in pool if q["id"] not in seen]
+    if len(fresh) < 5:
+        fresh = pool
+        st.session_state["kq_done"] = []
+    daily = random.sample(fresh, min(5, len(fresh)))
+    st.session_state["kq_done"] = seen + [q["id"] for q in daily]
+
+    picks = {}
+    for i, q in enumerate(daily, 1):
+        st.markdown("**Q{}（{}·{}级）: {}**".format(i, q["topic"], "🐣" if q["level"]==1 else "🌱" if q["level"]==2 else "🎓", q["q"]))
+        picks[q["id"]] = st.selectbox(
+            "选择答案", ["— 请选择 —"] + q["opts"], key="k_{}".format(q["id"]))
+        st.caption("提示：答对解锁图鉴「{}」".format(q["figure"]))
+
+    if st.button("提交知识测试", type="primary", use_container_width=True):
+        n_ok = 0
+        results = []
+        for q in daily:
+            picked = picks[q["id"]]
+            if picked == "— 请选择 —":
+                results.append((q, None))
+                continue
+            idx = q["opts"].index(picked)
+            ok = ks.record(q, idx, today)
+            n_ok += ok
+            results.append((q, idx))
+        for q, idx in results:
+            mark = "✅" if idx == q["ans"] else "❌"
+            st.markdown("{} **{}**".format(mark, q["q"]))
+            if idx is not None and idx != q["ans"]:
+                st.error("你的答案: {} | 正确答案: {} | {}".format(
+                    q["opts"][idx], q["opts"][q["ans"]], q["exp"]))
+            elif idx == q["ans"]:
+                st.success(q["exp"])
+        st.success("本次 {}/{} 题正确 | 累计知识分 {}（{}/{}）".format(
+            n_ok, len(daily), ks.score(), ks.correct, ks.total))
+        # 图鉴联动：答对的题解锁图鉴
+        if n_ok > 0:
+            best_ = Bestiary()
+            done_ids = set(best_.unlocked)
+            newly = []
+            for q in daily:
+                fid = q["figure"]
+                if fid not in done_ids:
+                    best_.unlocked.append(fid)
+                    done_ids.add(fid)
+                    newly.append(fid)
+            best_.save()
+            if newly:
+                st.success("📜 图鉴新解锁: {}".format(", ".join(newly)))
+
+    st.divider()
+    st.subheader("📕 错题本（复习）")
+    if ks.wrong:
+        for w in ks.wrong[-5:][::-1]:
+            st.warning("Q: {}（你选了「{}」，正确答案「{}」）".format(
+                w["q"], K_QUESTIONS[[q for q in K_QUESTIONS if q["id"]==w["id"]][0]]["opts"][w["picked"]],
+                K_QUESTIONS[[q for q in K_QUESTIONS if q["id"]==w["id"]][0]]["opts"][w["correct_ans"]]))
+    else:
+        st.info("暂无错题——继续保持！")
