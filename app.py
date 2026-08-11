@@ -374,8 +374,16 @@ with tab10:
             return "（纳指 {:+.1%} vs 沪深300 {:+.1%}）".format(info["ret_a"], info["ret_b"])
         if "corrs" in info:
             return "（{}，最低者 {}）".format(info["corrs"], info["lowest"])
+        if "moms" in info and "weak" in info:
+            return "（20日动量：{}，最弱 {}）".format(info["moms"], info["weak"])
         if "moms" in info:
             return "（20日动量：{}，最强 {}）".format(info["moms"], info["best"])
+        if "ic" in info:
+            return "（Spearman IC = {ic:+.2f}）".format(**info)
+        if "g_mom" in info:
+            return "（动量 黄金 {g_mom:+.1%} vs 原油 {o_mom:+.1%}；收益 黄金 {g_ret:+.1%} vs 原油 {o_ret:+.1%}）".format(**info)
+        if "agree" in info:
+            return "（完全一致 {agree}/4 只——IC 体检结论）".format(**info)
         if "plr" in info:
             return "（盈亏比 {:.2f} = 平均盈利 {:.2%} ÷ 平均亏损 {:.2%}）".format(
                 info["plr"], info.get("gain", 0), info.get("loss", 0))

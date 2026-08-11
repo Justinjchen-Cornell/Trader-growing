@@ -28,6 +28,8 @@ ACHIEVEMENTS = [
      "check": lambda s: s.get("levels_done", 0) >= 5},
     {"id": "quiz_ace",     "name": "闯关学霸",   "desc": "关卡测验累计答对 30 题",
      "check": lambda s: s.get("quiz_correct_total", 0) >= 30},
+    {"id": "all_worlds",   "name": "世界征服者", "desc": "通关全部 9 个世界（36 关）",
+     "check": lambda s: s.get("worlds_cleared", 0) >= 9},
 ]
 
 

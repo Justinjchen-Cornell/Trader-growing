@@ -10,6 +10,8 @@ import json
 import os
 from datetime import date
 
+import numpy as np
+
 WORLDS = {
     1: {"name": "新手村", "title": "跑通第一个策略",
         "boss_desc": "过拟合挑战：参数扫描冠军在样本外现原形"},
@@ -898,6 +900,125 @@ LEVELS = {
              "ans": 1, "exp": "策略在拖后腿 = 继续跑就是在给市场交管理费。"},
         ],
     },
+    "9-1": {
+        "chapter": 9, "name": "因子初识", "dim": "math", "xp": 15, "figure": "factor",
+        "knowledge": (
+            "因子（Factor）= 把投资直觉翻译成**可计算变量**。\n"
+            "'强者恒强' → 动量因子 = 过去 20 日涨跌幅；'便宜的好' → 估值因子 = PE/PB。\n"
+            "因子研究的第一步：给每个投资对象按因子打分排序——排名是后面一切评估（IC）的输入。\n"
+            "打分排序要一致、可重复：同样的数据任何时候算，都得出同样的排名。"),
+        "task": {
+            "type": "factor_rank_weak",
+            "args": {"syms": [("1", "510300.SS", "沪深300"), ("2", "513100.SS", "纳指100"),
+                              ("3", "518880.SS", "黄金"), ("4", "501018.SS", "原油")]},
+            "text": "🧪 实战任务：因子初识——把'强者恒强'翻译成可计算变量：动量因子 = 过去 20 日涨跌幅。\n"
+                    "四资产今日真实动量：{moms}\n"
+                    "动量**最弱**的是哪只？（输入 1=沪深300，2=纳指100，3=黄金，4=原油）",
+            "hint": "最弱 = 20 日涨跌幅最低（可能是负的）——找最负的那个",
+        },
+        "quiz": [
+            {"q": "因子是什么？",
+             "opts": ["把投资直觉翻译成可计算变量", "一种交易软件", "财务报告", "新闻标题"],
+             "ans": 0, "exp": "'强者恒强'→动量因子=20日涨幅；'便宜的好'→估值因子=PE。"},
+            {"q": "动量因子怎么计算？",
+             "opts": ["过去一段时间的涨跌幅（如 20 日）", "今天的成交量", "公司人数", "市盈率"],
+             "ans": 0, "exp": "动量 = 过去 N 日收益——可复现、可排序的量化打分。"},
+            {"q": "因子研究的第一步是什么？",
+             "opts": ["按因子给资产打分排序", "直接下单", "写报告", "找专家"],
+             "ans": 0, "exp": "排名是 IC 评估的输入——没有一致的打分，就没有后续的一切。"},
+        ],
+    },
+    "9-2": {
+        "chapter": 9, "name": "IC 初测", "dim": "math", "xp": 15, "figure": "ic",
+        "knowledge": (
+            "IC（信息系数 / Information Coefficient）= 因子排名与**未来收益排名**的相关性（-1 ~ +1）。\n"
+            "正 IC：因子方向对——排名靠前的资产后来确实涨得多；|IC| 越大预测力越强；"
+            "IC ≈ 0：没有预测力；负 IC：方向反了。\n"
+            "今天的真实数据：动量 IC ≈ **-0.40**——动量排名几乎和收益排名相反！"
+            "这不是巧合，是'动量陷阱'的实证（下关看原因）。"),
+        "task": {
+            "type": "ic_sign",
+            "args": {"syms": [("1", "510300.SS", "沪深300"), ("2", "513100.SS", "纳指100"),
+                              ("3", "518880.SS", "黄金"), ("4", "501018.SS", "原油")]},
+            "text": "🧪 实战任务：IC 初测——用真实数据算动量因子的 IC。\n"
+                    "动量排名（20 日涨幅，1=最强）：{mom_ranks}\n"
+                    "近一年收益排名（1=最强）：{ret_ranks}\n"
+                    "两列排名的相关性（IC）是正还是负？（输入 1=正，2=负，0=≈零）",
+            "hint": "对比两列：动量第1的黄金收益只排第3，动量垫底的原油收益第1——方向是不是反了？",
+        },
+        "quiz": [
+            {"q": "IC 衡量什么？",
+             "opts": ["因子排名与未来收益排名的相关性", "收益率高低", "交易成本", "持仓时间"],
+             "ans": 0, "exp": "IC = 因子预测力：排名靠前的，后来真的涨得多吗？"},
+            {"q": "IC 为负说明什么？",
+             "opts": ["因子方向反了——排名越前反而涨得越少", "因子很有效", "数据错了", "市场要崩"],
+             "ans": 0, "exp": "今天动量 IC ≈ -0.40：动量最强的黄金收益只排第 3——方向反了。"},
+            {"q": "IC 接近 +1 说明什么？",
+             "opts": ["因子预测力极强", "因子没用", "因子反了", "无法判断"],
+             "ans": 0, "exp": "排名几乎完全预测了收益排序——这是因子研究的'圣杯时刻'（但要防过拟合）。"},
+        ],
+    },
+    "9-3": {
+        "chapter": 9, "name": "因子失效点", "dim": "philosophy", "xp": 15, "figure": "vol_filter",
+        "knowledge": (
+            "书里关键结论：**动量因子在高波动投资对象上 IC 为负**——今天的真实数据再次应验。\n"
+            "高波动组（黄金、原油）：黄金动量最强（+7.6%）但收益只排第 3；原油动量垫底（-11.1%）"
+            "收益却是第 1——动量预测完全错误。\n"
+            "因子评估的价值不是看整体 IC，而是**发现弱点并转化为过滤规则**："
+            "高波动对象禁用动量因子（波动率过滤）。低波动组（沪深/纳指）动量就预测对了。"),
+        "task": {
+            "type": "factor_fail",
+            "args": {"syms": [("3", "518880.SS", "黄金"), ("4", "501018.SS", "原油")]},
+            "text": "🧪 实战任务：因子失效点——聚焦高波动组（黄金、原油）的真实数据：\n"
+                    "20 日动量：黄金 {g_mom:+.1%} vs 原油 {o_mom:+.1%}\n"
+                    "近一年收益：黄金 {g_ret:+.1%} vs 原油 {o_ret:+.1%}\n"
+                    "动量强的黄金，收益反而不如原油——动量因子在高波动对象上的预测对吗？"
+                    "（输入 1=对了，2=错了）",
+            "hint": "预测对 = 动量强的收益也强；动量强但收益弱 = 预测错了",
+        },
+        "quiz": [
+            {"q": "书里对动量因子的关键结论是？",
+             "opts": ["在高波动对象上 IC 为负", "在所有资产上都有效", "只对股票有效", "永远为正"],
+             "ans": 0, "exp": "今天高波动组（黄金/原油）再次应验——动量强的黄金反而收益落后。"},
+            {"q": "因子评估的核心价值是什么？",
+             "opts": ["发现弱点并转化为过滤规则", "追求完美因子", "越多因子越好", "只看整体 IC"],
+             "ans": 0, "exp": "知道'动量在高波动对象上失效'→ 加规则：高波动对象禁用动量。"},
+            {"q": "『波动率过滤』是指？",
+             "opts": ["高波动对象不用动量因子（或降低权重）", "删除所有高波动资产", "只看波动率", "波动大就加仓"],
+             "ans": 0, "exp": "把因子的弱点变成规则——不是不用高波动资产，而是不在这类资产上信这个因子。"},
+        ],
+    },
+    "9-BOSS": {
+        "chapter": 9, "name": "因子评估总账", "dim": "philosophy", "xp": 30, "figure": "scorecard", "boss": True,
+        "knowledge": (
+            "因子评估 SOP：定期重算 IC（月度/季度）→ 正 IC 留下继续用，"
+            "失效因子转过滤规则或直接淘汰。\n"
+            "量化交易员作业速查：每日——对账、核对信号与执行；每周——指标体检（回撤/波动/超额）；"
+            "每月——因子 IC 重算、策略体检；每季度——策略复盘、参数与规则审查。\n"
+            "今天总账：四资产动量 IC ≈ -0.40，只有 1 只（纳指）预测一致——"
+            "这个因子当下不值得信，但把弱点写成过滤规则后，它依然是工具箱的一员。"),
+        "task": {
+            "type": "factor_agree",
+            "args": {"syms": [("1", "510300.SS", "沪深300"), ("2", "513100.SS", "纳指100"),
+                              ("3", "518880.SS", "黄金"), ("4", "501018.SS", "原油")]},
+            "text": "🧪 实战任务：BOSS 战！因子评估总账——用今天的真实数据给动量因子做年度体检。\n"
+                    "动量排名（20 日涨幅，1=最强）：{mom_ranks}\n"
+                    "近一年收益排名（1=最强）：{ret_ranks}\n"
+                    "两列排名**完全一致**的资产有几只？（输入 0-4）",
+            "hint": "逐只对比：同一只资产在动量和收益两列里名次相同才算一致",
+        },
+        "quiz": [
+            {"q": "量化交易员的每日作业是什么？",
+             "opts": ["对账、核对信号与执行", "重算所有因子", "写论文", "预测明天涨跌"],
+             "ans": 0, "exp": "每日基本功是对账与信号核对——不是预测，是记账。"},
+            {"q": "因子 IC 应该多久重算一次？",
+             "opts": ["每月或每季度定期体检", "每天", "永远不用", "十年一次"],
+             "ans": 0, "exp": "因子的有效性会随市场环境漂移——定期体检，过期淘汰。"},
+            {"q": "IC 为负的因子怎么处理？",
+             "opts": ["直接删掉", "转过滤规则或淘汰——别让坏因子拖后腿", "加倍使用", "当作没看见"],
+             "ans": 1, "exp": "失效因子不一定是垃圾——它的失效点（高波动）恰恰是过滤规则的来源。"},
+        ],
+    },
 }
 
 
@@ -1397,3 +1518,94 @@ def solve_task(ttype, args=None):
         real = ret - cost
         alpha = real + cost - ret
         return round(alpha * 100), {"date": str(today), "ret": ret, "real": real, "cost": cost}
+
+    # ------------------------------------------------------------ 第 9 章：因子研究
+
+    def _factor_pool(args, default):
+        """读取资产池 [(idx, sym, name)]"""
+        return args.get("syms", default)
+
+    if ttype == "factor_rank_weak":
+        """因子初识：动量最弱（排名垫底）的资产"""
+        pool = _factor_pool(args, [("1", "510300.SS", "沪深300"), ("2", "513100.SS", "纳指100"),
+                                   ("3", "518880.SS", "黄金"), ("4", "501018.SS", "原油")])
+        moms = []
+        for idx, sym, name in pool:
+            close = load_latest(sym)
+            if close is None or len(close) < 22:
+                return None, "数据不足"
+            moms.append((int(idx), name, float(close.iloc[-1] / close.iloc[-21] - 1)))
+        weak = min(moms, key=lambda x: x[2])
+        return weak[0], {"date": str(today),
+                         "moms": ", ".join("{}={:+.1%}".format(n, m) for _, n, m in moms),
+                         "weak": weak[1]}
+
+    if ttype == "ic_sign":
+        """IC 初测：动量排名 vs 收益排名（Spearman）符号"""
+        pool = _factor_pool(args, [("1", "510300.SS", "沪深300"), ("2", "513100.SS", "纳指100"),
+                                   ("3", "518880.SS", "黄金"), ("4", "501018.SS", "原油")])
+        if len(pool) < 3:
+            return None, "资产池不足"
+        moms, rets = {}, {}
+        for idx, sym, name in pool:
+            close = load_latest(sym)
+            if close is None:
+                return None, "本地数据缺失"
+            moms[int(idx)] = float(close.iloc[-1] / close.iloc[-21] - 1)
+            rets[int(idx)] = window_ret(close)
+            if rets[int(idx)] is None:
+                return None, "数据不足"
+        def _ranks(vals):
+            return {i: 1 + sum(1 for j in vals if vals[j] > vals[i]) for i in vals}
+        mr, rr = _ranks(moms), _ranks(rets)
+        n = len(pool)
+        rm = np.array([mr[int(i)] for i, _, _ in pool], float)
+        rt = np.array([rr[int(i)] for i, _, _ in pool], float)
+        ic = float(np.corrcoef(rm, rt)[0, 1])
+        ans = 1 if ic > 0.2 else 2 if ic < -0.2 else 0
+        names = {int(i): n for i, _, n in pool}
+        return ans, {"date": str(today), "ic": ic, "n": n,
+                     "mom_ranks": ", ".join("{}{}".format(r, names[i]) for i, r in sorted(mr.items(), key=lambda x: x[1])),
+                     "ret_ranks": ", ".join("{}{}".format(r, names[i]) for i, r in sorted(rr.items(), key=lambda x: x[1]))}
+
+    if ttype == "factor_fail":
+        """因子失效点：高波动组（两资产）动量顺序 vs 收益顺序是否一致"""
+        pool = _factor_pool(args, [("3", "518880.SS", "黄金"), ("4", "501018.SS", "原油")])
+        if len(pool) != 2:
+            return None, "资产池需 2 只"
+        (ia, sym_a, na), (ib, sym_b, nb) = pool
+        ca, cb = load_latest(sym_a), load_latest(sym_b)
+        if ca is None or cb is None:
+            return None, "本地数据缺失"
+        ma, mb = float(ca.iloc[-1] / ca.iloc[-21] - 1), float(cb.iloc[-1] / cb.iloc[-21] - 1)
+        ra, rb = window_ret(ca), window_ret(cb)
+        if ra is None or rb is None:
+            return None, "数据不足"
+        consistent = (ma > mb) == (ra > rb)
+        return (1 if consistent else 2), {"date": str(today), "g_mom": ma, "o_mom": mb,
+                                          "g_ret": ra, "o_ret": rb}
+
+    if ttype == "factor_agree":
+        """因子评估总账：动量排名与收益排名完全一致的资产数"""
+        pool = _factor_pool(args, [("1", "510300.SS", "沪深300"), ("2", "513100.SS", "纳指100"),
+                                   ("3", "518880.SS", "黄金"), ("4", "501018.SS", "原油")])
+        if len(pool) < 3:
+            return None, "资产池不足"
+        moms, rets = {}, {}
+        for idx, sym, name in pool:
+            close = load_latest(sym)
+            if close is None:
+                return None, "本地数据缺失"
+            moms[int(idx)] = float(close.iloc[-1] / close.iloc[-21] - 1)
+            rets[int(idx)] = window_ret(close)
+            if rets[int(idx)] is None:
+                return None, "数据不足"
+        def _ranks(vals):
+            return {i: 1 + sum(1 for j in vals if vals[j] > vals[i]) for i in vals}
+        mr, rr = _ranks(moms), _ranks(rets)
+        agree = sum(1 for i in mr if mr[i] == rr[i])
+        names = {int(i): n for i, _, n in pool}
+        return agree, {"date": str(today),
+                       "mom_ranks": ", ".join("{}{}".format(r, names[i]) for i, r in sorted(mr.items(), key=lambda x: x[1])),
+                       "ret_ranks": ", ".join("{}{}".format(r, names[i]) for i, r in sorted(rr.items(), key=lambda x: x[1])),
+                       "agree": agree}
