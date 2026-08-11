@@ -409,6 +409,16 @@ with tab10:
             return "（佣金 {commission:.2f}（最低 5 元生效）+ 滑点 {slippage:.2f} = {total:.2f} 元）".format(**info)
         if "pct" in info and "price" in info and "date" in info:
             return "（滑点 +{pct:.1%}：{price} → {:.3f}）".format(info["price"] * (1 + info["pct"]), **info)
+        if "real" in info and "cost" in info:
+            alpha = info["real"] + info["cost"] - info["ret"]
+            return "（{real:+.1%} = 市场 {ret:+.1%} + 超额 {:+.1%} - 成本 {cost:.1%}）".format(
+                alpha, **info)
+        if "gap" in info:
+            return "（差额 {gap:.1%} = 交易成本 → 问题在执行层）".format(**info)
+        if "cond" in info:
+            return "（{n} 个大跌日黄金平均 {cond:+.2%} vs 全年 {all:+.2%}）".format(**info)
+        if "v60" in info:
+            return "（60日 {v60:.0%} vs 一年 {v252:.0%}）".format(**info)
         if "cost" in info and "ret" in info:
             return "（回测 {ret:+.1%} - 年成本 {cost:.1%} = {:+.1%}）".format(
                 info["ret"] - info["cost"], **info)
