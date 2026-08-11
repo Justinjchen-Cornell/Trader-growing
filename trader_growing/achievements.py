@@ -17,6 +17,17 @@ ACHIEVEMENTS = [
      "check": lambda s: s.get("stop_loss_executed", 0) >= 10},
     {"id": "empty_ok",     "name": "空仓大师",   "desc": "遵守空仓哲学 30 天",
      "check": lambda s: s.get("empty_days", 0) >= 30},
+    # ---- 学习关卡成就（state 由关卡系统补充：levels_done / worlds_cleared / quiz_correct_total）
+    {"id": "first_level",  "name": "初出茅庐",   "desc": "通关第一个学习关卡",
+     "check": lambda s: s.get("levels_done", 0) >= 1},
+    {"id": "world1_clear", "name": "新手村毕业", "desc": "通关第 1 章世界「新手村」全部关卡",
+     "check": lambda s: s.get("worlds_cleared", 0) >= 1},
+    {"id": "world2_clear", "name": "选品大师",   "desc": "通关第 2 章世界「选什么」全部关卡",
+     "check": lambda s: s.get("worlds_cleared", 0) >= 2},
+    {"id": "levels_5",     "name": "章节行者",   "desc": "累计通关 5 个关卡",
+     "check": lambda s: s.get("levels_done", 0) >= 5},
+    {"id": "quiz_ace",     "name": "闯关学霸",   "desc": "关卡测验累计答对 30 题",
+     "check": lambda s: s.get("quiz_correct_total", 0) >= 30},
 ]
 
 

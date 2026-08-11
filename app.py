@@ -25,7 +25,7 @@ from trader_growing.stats import analyze, red_flag_count
 from trader_growing.peerboard import PeerBoard
 from trader_growing.models import DailyRecord
 from trader_growing.knowledge import QUESTIONS as K_QUESTIONS, KnowledgeSystem
-from trader_growing.levels import LEVELS, WORLDS, Progress
+from trader_growing.levels import LEVELS, WORLDS, Progress, solve_task
 from trader_growing.dashboard import load_latest
 from trader_growing.questions import (QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE,
     dim_score, overall_score, grade, red_flags_from_answers,
@@ -211,6 +211,7 @@ with tab7:
                 "等级": r.get("level"), "XP": r.get("xp"),
                 "连击": r.get("streak"), "四维均值": round(avg, 0),
                 "徽章": r.get("badges"), "图鉴": r.get("bestiary"),
+                "关卡": r.get("levels", 0), "世界": r.get("worlds", 0),
                 "层级": r.get("tier"),
             })
         st.dataframe(_pd.DataFrame(rows), width="stretch")
@@ -349,76 +350,73 @@ with tab9:
 with tab10:
     st.subheader("🎮 学习关卡：把书变成游戏，把市场变成教材")
     prog = Progress()
-    # 世界地图
+
+    # ---- 世界地图 ----
     cols = st.columns(9)
     for i, ch in enumerate(sorted(WORLDS)):
         done_n, total_n = prog.world_progress(ch)
         with cols[i]:
             mark = "✅" if done_n == total_n else "🔒" if ch > 1 and done_n == 0 else "🌍"
             st.markdown("{} W{} {}".format(mark, ch, WORLDS[ch]["name"]))
-    st.caption("完成第 1 章全部关卡可解锁第 2 章世界")
+    st.caption("已通关 {} / {} 关 · 完成前一章全部关卡解锁下一章世界".format(
+        len(prog.completed), len(LEVELS)))
 
-    cur = prog.next_level()
-    if cur is None:
-        st.success("🎉 全部关卡已完成！等待下一章内容……")
-    else:
-        lid = [k for k, v in LEVELS.items() if v == cur][0]
-        ch = cur["chapter"]
-        # 世界锁检查：第 2 章起需要前一章通关
+    def _evidence(ttype, info):
+        """答后展示真实数据依据"""
+        if "corr" in info:
+            return "（黄金×沪深300 相关系数 {:.2f}）".format(info["corr"])
+        if "vol_a" in info:
+            return "（茅台年化波动 {:.0%} vs ETF {:.0%}）".format(info["vol_a"], info["vol_b"])
+        if "ret_a" in info:
+            return "（纳指 {:+.1%} vs 沪深300 {:+.1%}）".format(info["ret_a"], info["ret_b"])
+        if "corrs" in info:
+            return "（{}，最低者 {}）".format(info["corrs"], info["lowest"])
+        return ""
+
+    def _check_level_achievements(prog_, char_):
+        """关卡完成后的成就检查（补充关卡统计进 state）"""
+        state = dict(char_.summary())
+        state["levels_done"] = len(prog_.completed)
+        state["worlds_cleared"] = prog_.worlds_cleared()
+        state["quiz_correct_total"] = prog_.quiz_correct_total
+        new = ach.check_all(state)
+        if new:
+            st.success("🏅 新成就解锁: " + ", ".join("「{}」".format(a["name"]) for a in new))
+
+    def _render_level(lid_, lvl, review=False):
+        """渲染一个关卡：知识卡 → 实战任务 → 测验。review=True 为每日复习（+5 XP）"""
+        ch = lvl["chapter"]
         if ch > 1:
             prev_done, prev_total = prog.world_progress(ch - 1)
             if prev_done < prev_total:
                 st.warning("🔒 世界 {} 尚未解锁——先完成世界 {} 的全部关卡".format(
                     WORLDS[ch]["name"], WORLDS[ch - 1]["name"]))
-                st.stop()
+                return
 
         st.markdown("### {} · {} {}".format(
-            WORLDS[ch]["name"], "BOSS" if cur.get("boss") else "关卡", cur["name"]))
-        st.caption("奖励: +{} XP | 训练维度: {} | {}".format(
-            cur["xp"], cur["dim"], WORLDS[ch]["title"]))
+            WORLDS[ch]["name"], "BOSS" if lvl.get("boss") else "关卡", lvl["name"]))
+        st.caption("奖励: +{} XP{} | 训练维度: {} | {}".format(
+            lvl["xp"], "（复习 +5 XP）" if review else "（首通）", lvl["dim"], WORLDS[ch]["title"]))
         st.progress(prog.world_progress(ch)[0] / prog.world_progress(ch)[1])
 
         with st.expander("📖 知识卡（先学）", expanded=True):
-            st.markdown(cur["knowledge"])
+            st.markdown(lvl["knowledge"])
 
-        # ---- 实战任务 ----
+        # ---- 实战任务（真实数据） ----
         st.markdown("### 🧪 实战任务")
-        t = cur["task"]
-        date_str = str(_date.today())
-
-        # 实时取材
-        def _real_answer(ttype):
-            close = load_latest("510300.SS")
-            if close is None:
-                return None, "无数据"
-            px = float(close.iloc[-1])
-            if ttype == "calc_shares":
-                return round(1000 / px), px
-            if ttype == "ma_direction":
-                ma20 = float(close.rolling(20).mean().iloc[-1])
-                return (1 if px > ma20 else -1), px
-            if ttype == "vs_benchmark":
-                ref = close.iloc[-252] if len(close) > 252 else close.iloc[0]
-                diff = px / float(ref) - 1
-                return (1 if diff > 0.005 else -1 if diff < -0.005 else 0), px
-            if ttype == "overfit_choice":
-                return 2, px
-            return None, px
-
-        ans_true, px = _real_answer(t["type"])
+        ans_true, info = solve_task(lvl["task"]["type"])
         if ans_true is None:
-            st.error("本地数据缺失——先运行 python scripts/update_data.py")
-            st.stop()
-        st.markdown(t["text"].format(date=date_str, price=round(px, 3),
-                                      ref=date_str[:4] + "-" + date_str[5:7]))
-        st.caption("提示: " + t.get("hint", ""))
+            st.error("{}——先运行 python scripts/update_data.py".format(info))
+            return
+        st.markdown(lvl["task"]["text"].format(**info))
+        st.caption("提示: " + lvl["task"].get("hint", ""))
 
-        task_key = "task_done_" + lid
-        if prog.done(lid):
-            st.success("本关已完成 ✅")
+        task_key = "task_done_" + lid_
+        if prog.done(lid_) and not review:
+            st.success("本关已通关 ✅（下方复习区可每日再战）")
         else:
-            user_input = st.text_input("你的答案", key="task_in_" + lid)
-            if st.button("提交任务答案", key="task_btn_" + lid):
+            user_input = st.text_input("你的答案", key="task_in_" + lid_)
+            if st.button("提交任务答案", key="task_btn_" + lid_):
                 try:
                     val = int(user_input.strip())
                 except ValueError:
@@ -426,44 +424,69 @@ with tab10:
                     st.stop()
                 if val == ans_true:
                     st.session_state[task_key] = True
-                    st.success("✅ 任务正确！真实答案就是 {}".format(ans_true))
+                    st.success("✅ 任务正确！真实答案就是 {}{}".format(ans_true, _evidence(lvl["task"]["type"], info)))
                 else:
                     st.session_state[task_key] = False
-                    st.error("❌ 不对，再想想。真实答案是 {}".format(ans_true))
+                    st.error("❌ 不对，再想想。真实答案是 {}{}".format(ans_true, _evidence(lvl["task"]["type"], info)))
 
-            # ---- 测验 ----
-            if st.session_state.get(task_key):
-                st.markdown("### 🧠 关卡测验（答对 2/3 通关）")
-                quiz_ans = {}
-                for i, q in enumerate(cur["quiz"], 1):
-                    quiz_ans[i] = st.selectbox(
-                        "Q{}: {}".format(i, q["q"]), ["— 请选择 —"] + q["opts"],
-                        key="quiz_{}_{}".format(lid, i))
-                if st.button("提交测验", key="quiz_btn_" + lid):
-                    n_ok = 0
-                    for i, q in enumerate(cur["quiz"], 1):
-                        pick = quiz_ans[i + 1] if False else None
-                    # 简化：逐题判分
-                    ok_list = []
-                    for i, q in enumerate(cur["quiz"], 1):
-                        pick = st.session_state.get("quiz_{}_{}".format(lid, i))
-                        ok = pick is not None and pick != "— 请选择 —" and q["opts"].index(pick) == q["ans"]
-                        ok_list.append(ok)
-                        if ok:
-                            st.success("Q{} ✅ {}".format(i, q["exp"]))
-                        else:
-                            st.error("Q{} ❌ 正确答案: {} | {}".format(i, q["opts"][q["ans"]], q["exp"]))
-                    if sum(ok_list) >= 2:
-                        if prog.complete(lid):
-                            char.xp += cur["xp"]
-                            char.dims[cur["dim"]] = min(100, char.dims[cur["dim"]] + 5)
-                            char.save()
-                            best_ = Bestiary()
-                            if cur["figure"] not in best_.unlocked:
-                                best_.unlocked.append(cur["figure"])
-                                best_.save()
+        # ---- 测验 ----
+        if st.session_state.get(task_key):
+            st.markdown("### 🧠 关卡测验（答对 2/3 通关{}）".format(
+                "，复习得 +5 XP" if review else ""))
+            for i, q in enumerate(lvl["quiz"], 1):
+                st.selectbox("Q{}: {}".format(i, q["q"]), ["— 请选择 —"] + q["opts"],
+                             key="quiz_{}_{}".format(lid_, i))
+            if st.button("提交测验", key="quiz_btn_" + lid_):
+                ok_list = []
+                for i, q in enumerate(lvl["quiz"], 1):
+                    pick = st.session_state.get("quiz_{}_{}".format(lid_, i))
+                    ok = pick is not None and pick != "— 请选择 —" and q["opts"].index(pick) == q["ans"]
+                    ok_list.append(ok)
+                    if ok:
+                        st.success("Q{} ✅ {}".format(i, q["exp"]))
+                    else:
+                        st.error("Q{} ❌ 正确答案: {} | {}".format(i, q["opts"][q["ans"]], q["exp"]))
+                if sum(ok_list) >= 2:
+                    prog.complete(lid_, sum(ok_list), attempts=1)
+                    if not review:
+                        # 首通奖励
+                        char.xp += lvl["xp"]
+                        char.dims[lvl["dim"]] = min(100, char.dims[lvl["dim"]] + 5)
+                        char.save()
+                        best_ = Bestiary()
+                        if lvl["figure"] not in best_.unlocked:
+                            best_.unlocked.append(lvl["figure"])
+                            best_.save()
                         st.balloons()
                         st.success("🎉 关卡通关！+{} XP | 维度 {} +5 | 图鉴「{}」点亮".format(
-                            cur["xp"], cur["dim"], cur["figure"]))
+                            lvl["xp"], lvl["dim"], lvl["figure"]))
+                        _check_level_achievements(prog, char)
                     else:
-                        st.warning("测验未通过（{}/3）——重新读知识卡再试".format(sum(ok_list)))
+                        if prog.reviewed_today(lid_):
+                            st.info("今日已复习过本关（每日每关限一次）——明天再来")
+                        else:
+                            prog.mark_reviewed(lid_)
+                            char.xp += 5
+                            char.dims[lvl["dim"]] = min(100, char.dims[lvl["dim"]] + 1)
+                            char.save()
+                            st.balloons()
+                            st.success("🎉 复习完成！+5 XP | 维度 {} +1".format(lvl["dim"]))
+                else:
+                    st.warning("测验未通过（{}/3）——重新读知识卡再试".format(sum(ok_list)))
+
+    # ---- 下一个未完成关卡 ----
+    lid, cur = prog.next_level()
+    if cur is None:
+        st.success("🎉 全部关卡已完成！下方复习区可每天再战真实数据任务")
+    else:
+        _render_level(lid, cur)
+
+    # ---- 已通关关卡 · 每日复习 ----
+    st.divider()
+    st.subheader("🔄 已通关关卡 · 每日复习（+5 XP，每日每关限一次）")
+    if not prog.completed:
+        st.info("通关第一个关卡后，这里可以每天复习——市场数据每天在变，答案每天不同")
+    else:
+        pick = st.selectbox("选择要复习的关卡", prog.completed,
+                            format_func=lambda l: "{} · {}".format(l, LEVELS[l]["name"]))
+        _render_level(pick, LEVELS[pick], review=True)

@@ -8,3 +8,6 @@ plan_today.json
 # 运行时个人数据（角色/进度/日记/知识分——隐私，不上传）
 data/
 !data/.gitkeep
+
+# 会话交接/终端转录（含敏感信息如 API Key，勿上传）
+HANDOFF-*.md

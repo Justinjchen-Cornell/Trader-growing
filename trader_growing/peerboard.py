@@ -44,6 +44,13 @@ class PeerBoard:
     # ---- 导出自己的匿名成绩单 ----
     def export_card(self, char, ach, best, tier_name):
         s = char.summary()
+        try:
+            from trader_growing.levels import Progress
+            prog = Progress()
+            levels_done = len(prog.completed)
+            worlds_done = prog.worlds_cleared()
+        except Exception:
+            levels_done, worlds_done = 0, 0
         return {
             "id": self.self_id,
             "level": s["level"],
@@ -53,6 +60,8 @@ class PeerBoard:
             "dims": s["dims"],
             "badges": len(ach.summary()),
             "bestiary": len(best.unlocked),
+            "levels": levels_done,
+            "worlds": worlds_done,
             "tier": tier_name,
             "exported_at": __import__("datetime").date.today().isoformat(),
             "note": "Trader-growing 匿名成绩单，不含任何个人信息",

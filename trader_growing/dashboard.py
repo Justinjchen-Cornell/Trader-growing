@@ -32,6 +32,47 @@ def load_latest(symbol):
     return close
 
 
+def common_close(syms):
+    """多资产对齐：取所有资产共有日期的 close，返回 {sym: Series}"""
+    series = {}
+    for sym in syms:
+        close = load_latest(sym)
+        if close is None:
+            return None
+        series[sym] = close
+    idx = series[syms[0]].index
+    for sym in syms[1:]:
+        idx = idx.intersection(series[sym].index)
+    return {sym: series[sym].loc[idx] for sym in syms}
+
+
+def window_ret(close, days=252):
+    """区间收益率（最近 days 个交易日，不含今天按比例折算）"""
+    if close is None or len(close) < 2:
+        return None
+    ref = close.iloc[-(days + 1)] if len(close) > days else close.iloc[0]
+    return float(close.iloc[-1] / ref - 1)
+
+
+def annualized_vol(close, days=252):
+    """年化波动率（最近 days 个交易日日收益 std × √252）"""
+    if close is None or len(close) < 30:
+        return None
+    return float(close.pct_change().tail(days).std() * np.sqrt(252))
+
+
+def pair_corr(close_a, close_b, days=252):
+    """两资产日收益相关性（最近 days 个交易日）"""
+    if close_a is None or close_b is None or len(close_a) < 30 or len(close_b) < 30:
+        return None
+    ra = close_a.pct_change().tail(days)
+    rb = close_b.pct_change().tail(days)
+    j = ra.index.intersection(rb.index)
+    if len(j) < 30:
+        return None
+    return float(ra.loc[j].corr(rb.loc[j]))
+
+
 def signal_for(close):
     """轻信号：MA20 趋势 + 动量方向"""
     if close is None or len(close) < 60:
