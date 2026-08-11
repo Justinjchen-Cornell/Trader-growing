@@ -27,6 +27,9 @@ from trader_growing.bestiary import Bestiary
 from trader_growing.quests import QuestSystem, DAILY_QUESTS, WEEKLY_QUESTS
 from trader_growing.stats import report as stats_report
 from trader_growing.scoring_guide import show_guide
+from trader_growing.questions import QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE, dim_score, overall_score, grade, red_flags_from_answers
+from trader_growing.models import DailyRecord
+import json
 
 
 def plan_from_dict(d):
@@ -87,20 +90,83 @@ def cmd_status():
     print("图鉴: {}/{} 已收集".format(len(done), len(done) + len(todo)))
 
 
+def _ask_score(q):
+    while True:
+        v = input("  ➤ [0-4]: ").strip()
+        if not v:
+            return 2
+        try:
+            val = int(v)
+            if 0 <= val <= 4:
+                return val
+        except ValueError:
+            pass
+        print("    请输入 0-4")
+
+
 def cmd_check():
     char = Character()
-    print("每日修行打卡：四维打分（0-100，回车默认 50）")
-    print("先对照参考标准，再给自己打分：")
+    quick = "--quick" in sys.argv
+    print()
+    print("=" * 55)
+    print("  🌱 每日修行测试（20 题客观打分）")
+    print("=" * 55)
+    print("  每题 0-4 分: " + SCALE)
+    print("  维度分自动计算（原始分/满分*100），拒绝拍脑袋")
+    print()
+
+    answers = {}
     dims = {}
     for d in ["math", "finance", "psychology", "philosophy"]:
-        show_guide(d)
-        v = input("  {} 打分 [0-100]: ".format(d)).strip()
-        try:
-            dims[d] = float(v) if v else 50.0
-        except ValueError:
-            dims[d] = 50.0
-    gain = char.daily_checkin(dims)
-    print("打卡完成 +{} XP | 连击 {} 天 | 等级 {}".format(gain, char.streak, char.level[1]))
+        print("  {} {} 维度（5 题）".format(DIM_EMOJI.get(d, ""), DIM_NAMES[d]))
+        print("  " + "-" * 45)
+        if quick:
+            show_guide(d)
+            v = input("  {} 总分 [0-100]: ".format(DIM_NAMES[d])).strip()
+            try:
+                dims[d] = float(v) if v else 50.0
+            except ValueError:
+                dims[d] = 50.0
+            answers[d] = [2] * 5
+        else:
+            qs = []
+            for i, q in enumerate(QUESTIONS[d], 1):
+                print("  Q{}: {}".format(i, q))
+                qs.append(_ask_score(q))
+            answers[d] = qs
+            dims[d] = dim_score(qs)
+            print("  → {} {}分 (等级{})".format(DIM_NAMES[d], dims[d], grade(dims[d])))
+        print()
+
+    overall = overall_score(dims)
+    print("=" * 55)
+    print("  今日综合分: {}（等级 {}）".format(overall, grade(overall)))
+
+    # 客观红牌推断
+    flags = red_flags_from_answers(answers)
+    if flags:
+        print("  🔴 今日纪律风险（客观推断）:")
+        for f in flags:
+            print("    - " + f)
+    else:
+        print("  ✅ 今日无客观纪律风险")
+
+    # 打卡（有红牌时 XP 减半）
+    issue = len(flags) > 0
+    gain = char.daily_checkin(dims, has_discipline_issue=issue)
+    print("  打卡 +{} XP | 连击 {} 天 | 等级 {}".format(gain, char.streak, char.level[1]))
+
+    # 保存当日记录（data/diary/ 兼容格式）
+    rec = DailyRecord(date=str(__import__("datetime").date.today()), mode="evening",
+                      math=dims["math"], finance=dims["finance"],
+                      psychology=dims["psychology"], philosophy=dims["philosophy"],
+                      overall=overall, trades_today=None)
+    diary_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             "data", "diary")
+    os.makedirs(diary_dir, exist_ok=True)
+    with open(os.path.join(diary_dir, rec.date + ".json"), "w", encoding="utf-8") as f:
+        json.dump(rec.to_dict(), f, ensure_ascii=False, indent=2)
+
     s = char.summary()
     print(draw_garden(s["dims"]))
     ach = AchievementSystem()
