@@ -282,15 +282,12 @@ with tab9:
     st.info("当前解锁：{}（{} 题）| 知识分：**{}**（做对 {}/{}）".format(
         level_badges(unlock), len(pool), ks.score(), ks.correct, ks.total))
 
-    # 今日抽 5 题（按主题轮换，避免重复）
+    # 今日题目固定（session 缓存，选择不换题；隔天自动换新）
     import random
-    seen = st.session_state.get("kq_done", [])
-    fresh = [q for q in pool if q["id"] not in seen]
-    if len(fresh) < 5:
-        fresh = pool
-        st.session_state["kq_done"] = []
-    daily = random.sample(fresh, min(5, len(fresh)))
-    st.session_state["kq_done"] = seen + [q["id"] for q in daily]
+    cache_key = "kq_daily_" + today
+    if cache_key not in st.session_state:
+        st.session_state[cache_key] = random.sample(pool, min(5, len(pool)))
+    daily = st.session_state[cache_key]
 
     picks = {}
     for i, q in enumerate(daily, 1):
