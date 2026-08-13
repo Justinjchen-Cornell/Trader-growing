@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌱 Trader-growing · 交易者成长花园</title>
+<meta name="description" content="把《人人都是量化交易员》变成闯关游戏：36 个真实行情关卡 + 实验场回测沙盒 + 每日一题。本地优先，免费开源。">
+<style>
+  :root { --green: #27ae60; --dark: #1a2b22; --bg: #f6faf7; --card: #ffffff; --muted: #667a70; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+         background: var(--bg); color: var(--dark); line-height: 1.7; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+  header { background: linear-gradient(135deg, #1e3d2e 0%, #27ae60 100%); color: #fff; padding: 48px 0 40px; }
+  .badge { display: inline-block; background: rgba(255,255,255,.18); border-radius: 999px;
+           padding: 3px 12px; font-size: 13px; margin: 0 4px 8px 0; }
+  h1 { font-size: 34px; margin: 8px 0 10px; }
+  .sub { opacity: .92; font-size: 17px; max-width: 640px; }
+  .btns { margin-top: 22px; }
+  .btn { display: inline-block; padding: 10px 22px; border-radius: 8px; text-decoration: none;
+         font-weight: 600; margin: 6px 8px 0 0; transition: .2s; }
+  .btn-light { background: #fff; color: #1e3d2e; }
+  .btn-ghost { border: 1.5px solid rgba(255,255,255,.7); color: #fff; }
+  .btn:hover { transform: translateY(-2px); opacity: .92; }
+  section { padding: 40px 0; border-bottom: 1px solid #e3eee7; }
+  h2 { font-size: 24px; margin-bottom: 14px; }
+  h2 .tag { font-size: 14px; color: var(--green); margin-left: 8px; font-weight: 400; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid #e3eee7; border-radius: 12px; padding: 18px; }
+  .card h3 { font-size: 17px; margin-bottom: 6px; }
+  .card p { color: var(--muted); font-size: 14px; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 8px; }
+  .shots figure { background: var(--card); border: 1px solid #e3eee7; border-radius: 12px; overflow: hidden; }
+  .shots img { width: 100%; display: block; }
+  .shots figcaption { padding: 8px 12px; font-size: 13px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; background: var(--card);
+          border: 1px solid #e3eee7; border-radius: 12px; overflow: hidden; font-size: 14px; }
+  th, td { padding: 9px 14px; text-align: left; border-bottom: 1px solid #edf4ef; }
+  th { background: #eef7f1; color: #1e3d2e; }
+  code { background: #eef4f0; border-radius: 5px; padding: 2px 7px; font-size: 13px; }
+  pre { background: #12231a; color: #c9f2d8; border-radius: 10px; padding: 16px; overflow-x: auto;
+        font-size: 13px; line-height: 1.6; }
+  pre code { background: none; color: inherit; padding: 0; }
+  footer { padding: 30px 0 50px; color: var(--muted); font-size: 13px; text-align: center; }
+  .pill { display: inline-block; background: #eef7f1; color: #1e7a45; border-radius: 999px;
+          padding: 2px 10px; font-size: 12px; margin: 2px 4px 2px 0; }
+  a { color: var(--green); }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div>
+      <span class="badge">v6.0</span><span class="badge">MIT License</span><span class="badge">本地优先 · 隐私安全</span>
+    </div>
+    <h1>🌱 Trader-growing · 交易者成长花园</h1>
+    <p class="sub">把《人人都是量化交易员》变成闯关游戏——36 个用<b>今天真实行情</b>判分的关卡、15 种可调参的策略回测沙盒、每天 30 秒的今日一题。</p>
+    <div class="btns">
+      <a class="btn btn-light" href="https://github.com/Justinjchen-Cornell/Trader-growing" target="_blank">⭐ GitHub 仓库</a>
+      <a class="btn btn-ghost" href="#quickstart">🚀 快速开始</a>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>📸 界面速览</h2>
+    <div class="shots">
+      <figure><img src="screenshots/home.png" alt="今日一题"><figcaption>🏠 今日：每日一题 + 全勤进度</figcaption></figure>
+      <figure><img src="screenshots/levels.png" alt="学习关卡"><figcaption>🎮 学习：9 世界 36 关，答案每天变</figcaption></figure>
+      <figure><img src="screenshots/lab.png" alt="实验场"><figcaption>🧪 实验场：真实数据回测沙盒</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>🧭 七个 Tab，一条学习路径</h2>
+    <div class="grid">
+      <div class="card"><h3>🏠 今日</h3><p>今日一题（30 秒）+ 全勤进度 + 新手引导。每天从这里开始。</p></div>
+      <div class="card"><h3>🎮 学习</h3><p>9 世界 36 关，通关一章解锁下一章。今日推荐智能指引下一步。</p></div>
+      <div class="card"><h3>📝 测试</h3><p>每日修行测试（20 题客观打分）+ 知识测试（错题本）。</p></div>
+      <div class="card"><h3>🎯 操作台</h3><p>四资产看板 + 策略计划 + 30 秒纪律对账，一键更新行情。</p></div>
+      <div class="card"><h3>🧪 实验场</h3><p>15 种策略回测，每张配「策略课」知识卡：是什么、怎么调、何时失效。</p></div>
+      <div class="card"><h3>📊 我的</h3><p>等级/花园/成长曲线/图鉴/徽章/任务/周报，全部收纳一处。</p></div>
+      <div class="card"><h3>👥 同行榜</h3><p>匿名成绩单导入导出，关卡进度对比。</p></div>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="wrap">
+    <h2>🎮 学习关卡：9 世界 36 关 <span class="tag">答案每天随真实行情变化</span></h2>
+    <p style="color:var(--muted); margin-bottom:12px;">每一关 = 知识卡 + 实战任务 + 测验。实战任务用<b>当天的真实行情</b>判分——背不了，只能真的去看数据。</p>
+    <table>
+      <tr><th>世界</th><th>关卡 → BOSS</th><th>真实数据任务示例</th></tr>
+      <tr><td>W1 新手村</td><td>定投播种 → 基准对决 → 均线信号 → 过拟合挑战</td><td>今天 1000 元定投能买多少份？</td></tr>
+      <tr><td>W2 选什么</td><td>个股vsETF → 中美锚定 → 相关性探秘 → 标的池挑战</td><td>黄金×沪深300 今天相关性正负？</td></tr>
+      <tr><td>W3 分多少</td><td>等权分钱 → 风险平价 → 动量排名 → 盈亏比之战</td><td>风险平价下谁该分到更多钱？</td></tr>
+      <tr><td>W4 何时动</td><td>再平衡 → 止损 → 止盈 → 锯齿效应</td><td>按今日价买入，-8% 止损价是多少？</td></tr>
+      <tr><td>W5 体检台</td><td>基准对比 → 逐年拆解 → 回撤深度 → 参数敏感性</td><td>近 5 年哪年亏得最多？</td></tr>
+      <tr><td>W6 陷阱迷宫</td><td>样本内外 → Walk-forward → 交叉验证 → 规则负担</td><td>奇偶年切法结论一致吗？</td></tr>
+      <tr><td>W7 现实世界</td><td>整手订单 → 滑点 → 成本层叠 → 执行落差</td><td>30,000 元最多买几手？</td></tr>
+      <tr><td>W8 守护者</td><td>监控仪表盘 → 诊断三问 → 假设对照 → 归因总账</td><td>"黄金大跌日走强"假设成立吗？</td></tr>
+      <tr><td>W9 研究者</td><td>因子初识 → IC 初测 → 因子失效点 → 因子评估总账</td><td>动量因子今天的 IC 是正是负？</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>🧪 实验场：15 种策略，全部配课</h2>
+    <p style="color:var(--muted); margin-bottom:12px;">真实数据回测：净值曲线 vs 基准 + 夏普 + 最大回撤 + 水下曲线。每张策略卡都诚实标注「何时失效」。</p>
+    <div>
+      <span class="pill">定投</span><span class="pill">均线择时</span><span class="pill">MACD 金叉</span>
+      <span class="pill">RSI 超买超卖</span><span class="pill">布林带均值回归</span><span class="pill">双推力突破</span>
+      <span class="pill">神奇振荡器</span><span class="pill">Heikin-Ashi</span><span class="pill">伦敦突破</span>
+      <span class="pill">抛物线 SAR</span><span class="pill">射击之星</span><span class="pill">配对交易</span>
+      <span class="pill">等权组合</span><span class="pill">风险平价</span><span class="pill">动量轮动</span>
+    </div>
+  </div>
+</section>
+<section id="quickstart">
+  <div class="wrap">
+    <h2>🚀 快速开始 <span class="tag">约 3 分钟</span></h2>
+    <pre><code># 1. 克隆
+git clone https://github.com/Justinjchen-Cornell/Trader-growing.git
+cd Trader-growing
+
+# 2. 装依赖
+pip install -r requirements.txt
+
+# 3. 拉行情数据（免费，无需注册）
+python scripts/update_data.py --source akshare
+
+# 4. 打开 Web 界面
+streamlit run app.py</code></pre>
+    <p style="color:var(--muted); font-size:14px; margin-top:10px;">或纯命令行：<code>python scripts/tg.py week</code> 看修行周报，<code>python scripts/tg.py status</code> 看角色。</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>📦 技术栈</h2>
+    <div class="grid">
+      <div class="card"><h3>Python + Streamlit</h3><p>7 tab Web 界面，本地优先，数据全在 ~/.oxq 与 data/。</p></div>
+      <div class="card"><h3>akshare / Wind 双数据源</h3><p>免费免注册即可更新 9 只资产（4 ETF/LOF + 5 个股）日线。</p></div>
+      <div class="card"><h3>matplotlib 实时绘图</h3><p>知识卡配图（水下曲线/相关性散点）、分享卡片 PNG、回测曲线全部现算现画。</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>🌱 Trader-growing · 交易者成长花园 —— 代码 MIT 许可 · 文档 CC BY-NC-SA 4.0</p>
+    <p>⚠️ 本工具仅供教育与研究，不构成投资建议。历史表现不代表未来收益。</p>
+    <p style="margin-top:6px;"><a href="https://github.com/Justinjchen-Cornell/Trader-growing" target="_blank">GitHub</a> ·
+       <a href="https://xingwudao.github.io/xquant-beginner/" target="_blank">《人人都是量化交易员》</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
