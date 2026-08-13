@@ -20,6 +20,7 @@ class Character:
         self.xp = 0
         self.streak = 0
         self.last_date = None
+        self.first_checkin = None
         self.dims = {d: 0.0 for d in DIMS}
         self.total_days = 0
         self.load()
@@ -31,6 +32,7 @@ class Character:
             self.xp = d.get("xp", 0)
             self.streak = d.get("streak", 0)
             self.last_date = d.get("last_date")
+            self.first_checkin = d.get("first_checkin")
             self.dims = {**self.dims, **d.get("dims", {})}
             self.total_days = d.get("total_days", 0)
 
@@ -38,8 +40,30 @@ class Character:
         os.makedirs(os.path.dirname(self.data_path), exist_ok=True)
         with open(self.data_path, "w", encoding="utf-8") as f:
             json.dump({"xp": self.xp, "streak": self.streak, "last_date": self.last_date,
+                       "first_checkin": self.first_checkin,
                        "dims": self.dims, "total_days": self.total_days},
                       f, ensure_ascii=False, indent=2)
+
+    def is_newbie(self):
+        """新手上路期：首次打卡起 7 天内 XP 双倍"""
+        if not self.first_checkin:
+            return False
+        try:
+            from datetime import date as _d
+            days = (_d.today() - _d.fromisoformat(self.first_checkin)).days
+            return 0 <= days <= 7
+        except ValueError:
+            return False
+
+    def gain_xp(self, n, save=True):
+        """加 XP（新手上路期双倍），返回实际获得值"""
+        n = int(n)
+        if self.is_newbie():
+            n = n * 2
+        self.xp += n
+        if save:
+            self.save()
+        return n
 
     @property
     def level(self):
@@ -71,6 +95,10 @@ class Character:
         gain = base
         if has_discipline_issue:
             gain = max(1, gain // 2)
+        if self.first_checkin is None:
+            self.first_checkin = today
+        if self.is_newbie():
+            gain = gain * 2
         self.xp += gain
         self.total_days += 1
         self.last_date = today

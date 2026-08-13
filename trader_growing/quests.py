@@ -55,7 +55,7 @@ class QuestSystem:
         return [q["id"] for q in DAILY_QUESTS if "{}:{}".format(today, q["id"]) in self.done]
 
     def complete_weekly(self, qid, char=None):
-        """完成每周任务，返回 XP 奖励（若未完成过）"""
+        """完成每周任务，返回 XP 奖励（若未完成过；新手期自动双倍）"""
         week = date.today().isocalendar()[:2]
         key = "{}W{}:{}".format(week[0], week[1], qid)
         if key in self.week_done:
@@ -64,6 +64,8 @@ class QuestSystem:
         self.save()
         q = next((x for x in WEEKLY_QUESTS if x["id"] == qid), None)
         if q and char:
+            if hasattr(char, "gain_xp"):
+                return char.gain_xp(q["xp"])
             char.xp += q["xp"]
             char.save()
         return q["xp"] if q else 0

@@ -86,10 +86,63 @@ def growth_curve():
 st.title("🌱 Trader-growing · 交易者成长花园")
 st.caption("把交易人生变成一座花园。每天 5 分钟浇水，每周一篮果实，每季度一次修剪。")
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs(
-    ["🏠 状态", "🌍 四资产看板", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试", "🧠 知识测试", "🎮 学习关卡", "📅 周报"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs(
+    ["🏠 今日", "🎯 操作台", "🧪 实验场", "🎮 学习关卡", "📜 图鉴", "📊 成长", "📋 任务", "🏅 徽章", "👥 同行榜", "✅ 每日测试", "🧠 知识测试", "📅 周报"])
+
+today = str(_date.today())
 
 with tab1:
+    # ---- ⚡ 今日一题（30 秒，用今天的真实行情学量化） ----
+    st.subheader("⚡ 今日一题（30 秒 · 用今天的真实行情学量化）")
+    from trader_growing.daily_challenge import today_question, ChallengeRecord, make_card
+    q = today_question()
+    cr = ChallengeRecord()
+    if char.is_newbie():
+        st.info("🌱 新手上路期（首次打卡 7 天内）：所有 XP 双倍！")
+    if cr.done_today():
+        st.success("今日已答对（+3 XP 已入账）——明天 0 点换新题，答案随行情变")
+    else:
+        st.markdown("**Q · [{}]** {}".format(q["label"], q["text"]))
+        st.caption("提示: " + q["hint"])
+        ans_in = st.text_input("你的答案", key="challenge_ans")
+        if st.button("提交答案", key="challenge_btn", type="primary"):
+            try:
+                val = int(ans_in.strip())
+            except ValueError:
+                st.error("请输入数字")
+                st.stop()
+            correct = (val == q["answer"])
+            first = cr.record(correct)
+            st.session_state["challenge_last_ans"] = ans_in.strip()
+            if correct:
+                got = char.gain_xp(3) if first else 0
+                if got:
+                    st.balloons()
+                    st.success("✅ 答对了！+{} XP{}".format(got, "（新手双倍）" if got != 3 else ""))
+                else:
+                    st.success("✅ 答对了！（今天已经拿过 XP 了）")
+            else:
+                st.error("❌ 不对——正确答案是 {}。".format(q["answer"]))
+    st.markdown("**今日市场教学**: " + q["evidence"])
+    if cr.done_today() or cr.attempts_today() > 0:
+        prog_snap = Progress()
+        card = make_card(q, st.session_state.get("challenge_last_ans", ""),
+                         cr.done_today(), s, len(prog_snap.completed),
+                         prog_snap.worlds_cleared())
+        st.download_button("📤 下载今日分享卡片（发微信群/朋友圈）",
+                           data=card, file_name="trader_card_{}.png".format(today),
+                           mime="image/png")
+
+    # ---- 今日全勤 ----
+    ks_h = KnowledgeSystem().history
+    check_done = char.last_date == today
+    know_done = any(h.get("date") == today for h in ks_h)
+    full = check_done and cr.done_today()
+    st.caption("今日进度：{} 每日测试 · {} 今日一题 · {} 知识测试{}".format(
+        "✅" if check_done else "⬜", "✅" if cr.done_today() else "⬜",
+        "✅" if know_done else "⬜", "  —— 🎉 全勤！" if full else ""))
+    st.divider()
+
     # ---- 新手路径引导 ----
     with st.expander("🚀 新手路径（每天 5 分钟，第 1 天从这里开始）", expanded=False):
         from trader_growing.dashboard import load_latest as _ll
@@ -132,14 +185,162 @@ with tab1:
             st.progress(min(1.0, v / 100))
 
 with tab2:
-    st.subheader("🌍 四资产看板")
-    df = build_dashboard()
-    if len(df) == 0:
-        st.warning("未找到本地数据（~/.oxq/data/market/*.parquet）")
-    else:
+    st.subheader("🎯 今日操作台：看天气 → 定计划 → 对账")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**🌍 四资产看板**")
+        df = build_dashboard()
+        if len(df) == 0:
+            st.warning("未找到本地数据（~/.oxq/data/market/*.parquet）")
+        else:
             st.dataframe(df, width='stretch')
+        st.caption("趋势 = 轻信号(MA20)；重信号见右侧策略计划")
+        if st.button("📥 更新行情数据（akshare · 约 1 分钟）", use_container_width=True):
+            import subprocess as _sp
+            root = os.path.dirname(os.path.abspath(__file__))
+            with st.spinner("正在从 akshare 拉取 9 只资产日线……"):
+                try:
+                    r = _sp.run([sys.executable, os.path.join(root, "scripts", "update_data.py"),
+                                 "--source", "akshare"], capture_output=True, text=True,
+                                timeout=300, cwd=root)
+                    out = (r.stdout or "")[-1200:]
+                    st.code(out)
+                except Exception as e:
+                    st.error("更新失败: {}".format(str(e)[:200]))
+    with c2:
+        st.markdown("**📋 今日策略计划（中庸策略）**")
+        from trader_growing.strategy_bridge import load_plan
+        from trader_growing.models import Plan
+        plan_d = load_plan()
+        if not plan_d:
+            st.info("还没有今日计划——运行中庸策略 plan.py 后刷新，或先按看板轻信号观察")
+            plan_obj = None
+        else:
+            st.markdown("**{}**（{}）".format(plan_d.get("action", "—"), plan_d.get("asset", "—")))
+            for k in ["signal", "cap", "close", "stop_loss_line", "advice"]:
+                v = plan_d.get(k)
+                if v:
+                    st.write("- {}: {}".format({"signal": "信号", "cap": "建议仓位", "close": "收盘",
+                                                "stop_loss_line": "止损线", "advice": "建议"}.get(k, k), v))
+            plan_obj = Plan(date=plan_d.get("date", ""), asset=plan_d.get("asset", ""),
+                            symbol=plan_d.get("symbol", ""), signal=plan_d.get("signal", ""),
+                            cap=plan_d.get("cap", 0), action=plan_d.get("action", ""),
+                            close=plan_d.get("close", 0), stop_loss_line=plan_d.get("stop_loss_line", 0),
+                            advice=plan_d.get("advice", ""))
+        st.divider()
+        st.markdown("**⚖️ 纪律对账（计划 vs 实际，每天 30 秒）**")
+        from trader_growing.reconcile import reconcile as _reconcile
+        rec_key = "reconcile_done_" + today
+        if st.session_state.get(rec_key):
+            st.success("今日已对账 ✅（见下方结果）")
+        else:
+            with st.form("reconcile_form"):
+                traded = st.checkbox("今天有交易吗？")
+                followed = st.checkbox("严格按计划执行了吗？")
+                impulse = st.checkbox("有计划外开仓/加仓？")
+                moved = st.checkbox("手动移动过止损线？")
+                submitted = st.form_submit_button("提交对账")
+            if submitted:
+                if not traded and not impulse and not moved:
+                    st.info("今天没交易、没违规——空仓/不动也是一种纪律 ✅")
+                tb = {"traded_today": traded, "followed_plan": followed if traded else None,
+                      "impulse_trade": impulse, "moved_stop_loss": moved}
+                # 写入今日日记
+                from trader_growing.models import DailyRecord
+                _d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "diary")
+                os.makedirs(_d, exist_ok=True)
+                fp = os.path.join(_d, today + ".json")
+                if os.path.exists(fp):
+                    with open(fp, encoding="utf-8") as f:
+                        rec = DailyRecord(**json.load(f))
+                    rec.trades_today = tb
+                else:
+                    rec = DailyRecord(date=today, mode="evening", math=0, finance=0,
+                                      psychology=0, philosophy=0, overall=0,
+                                      notes="操作台对账", trades_today=tb)
+                with open(fp, "w", encoding="utf-8") as f:
+                    json.dump(rec.to_dict(), f, ensure_ascii=False, indent=2)
+                st.session_state[rec_key] = True
+                qs.complete_daily("reconcile")
+                st.rerun()
+        if st.session_state.get(rec_key):
+            from trader_growing.journal_bridge import load_latest as _jl
+            rec = _jl()
+            if rec:
+                res = _reconcile(plan_obj, rec)
+                if res.clean:
+                    st.success("✅ 对账干净：今天的执行与计划一致")
+                else:
+                    st.warning("发现 {} 条纪律问题:".format(len(res.issues)))
+                    for i in res.issues:
+                        st.write("- 🔴 " + i)
 
 with tab3:
+    st.subheader("🧪 实验场：真实数据回测沙盒（书里实验的可玩版）")
+    from trader_growing.backtest import run as run_bt, STRATEGIES as _BTS, ASSETS as _BASSETS
+    _sid = st.selectbox("策略模板", [s[0] for s in _BTS],
+                        format_func=lambda x: next(s[1] for s in _BTS if s[0] == x))
+    _default = next(s[2] for s in _BTS if s[0] == _sid)
+    _syms = st.multiselect("资产池", list(_BASSETS.keys()), default=_default,
+                           format_func=lambda x: _BASSETS[x])
+    c1, c2, c3 = st.columns(3)
+    _win = c1.slider("参数窗口（MA/动量回看）", 5, 120, 20)
+    _cost = c2.slider("单边成本 %", 0.0, 0.5, 0.05) / 100.0
+    if _sid == "dca":
+        _monthly = int(c3.number_input("每月定投金额", 100, 100000, 1000, step=100))
+    else:
+        _monthly = 1000
+        c3.caption("组合策略每月再平衡")
+    st.caption("指标对比 = 策略 vs 基准（买入持有）。回测是'背答案'的第一现场——漂亮的结果要先怀疑（第 6 章）。")
+    if st.button("🚀 跑回测（真实数据）", type="primary", use_container_width=True):
+        if not _syms:
+            st.error("请至少选择一只资产")
+        else:
+            with st.spinner("回测中……"):
+                res = run_bt(_sid, syms=tuple(_syms), window=int(_win), cost=_cost, monthly=_monthly)
+            if res is None:
+                st.error("数据不足——先运行 python scripts/update_data.py --source akshare")
+            else:
+                m, bm = res["metrics"], res["bench_metrics"]
+                r1, r2, r3, r4 = st.columns(4)
+                r1.metric("策略总收益", "{:+.1%}".format(m["total"]))
+                r2.metric("夏普", "{:.2f}".format(m["sharpe"]))
+                r3.metric("最大回撤", "{:.1%}".format(m["max_dd"]))
+                r4.metric("卡玛比", "{:.2f}".format(m["calmar"]))
+                st.caption("基准对照：总收益 {:+.1%} | 夏普 {:.2f} | 回撤 {:.1%} | {}".format(
+                    bm["total"], bm["sharpe"], bm["max_dd"], res["meta"]))
+                # 净值曲线
+                fig, ax = plt.subplots(figsize=(10, 4))
+                ax.plot(res["equity"].index, res["equity"].values, label="策略", lw=1.5, color="#27ae60")
+                ax.plot(res["bench"].index, res["bench"].values, label="基准（买入持有）", lw=1.2, color="#95a5a6")
+                ax.set_title("净值曲线（初始 1 元）")
+                ax.legend()
+                st.pyplot(fig)
+                # 水下曲线
+                uw = res["equity"] / res["equity"].cummax() - 1
+                fig2, ax2 = plt.subplots(figsize=(10, 2.6))
+                ax2.fill_between(uw.index, uw * 100, 0, color="#e74c3c", alpha=0.4)
+                ax2.set_title("水下曲线（回撤深度）")
+                st.pyplot(fig2)
+                # 保存实验
+                if st.button("💾 保存到修行日记（+30 XP 周任务「回测复现」）"):
+                    exp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+                    exp_path = os.path.join(exp_dir, "experiments.json")
+                    exp = {"date": today, "strategy": _sid,
+                           "assets": list(_syms), "window": int(_win), "cost": _cost,
+                           "metrics": {k: round(v, 4) for k, v in m.items()}}
+                    existing = []
+                    if os.path.exists(exp_path):
+                        with open(exp_path, encoding="utf-8") as f:
+                            existing = json.load(f)
+                    existing.append(exp)
+                    with open(exp_path, "w", encoding="utf-8") as f:
+                        json.dump(existing, f, ensure_ascii=False, indent=2)
+                    wk = qs.complete_weekly("backtest", char)
+                    st.success("✅ 实验已存档 | 周任务「回测复现」+{} XP".format(wk))
+
+
+with tab5:
     st.subheader("📜 知识图鉴（{} 条）".format(len(ENTRIES)))
     # 打卡天数分档解锁（Web 端补钩子：解锁后显示新条目）
     newly = best.check(char.total_days)
@@ -159,7 +360,7 @@ with tab3:
                 else:
                     st.markdown("🔒 ~~**{}**~~：解锁需打卡 {} 天".format(e[1], e[4] if e[4] > 0 else "（特殊行为）"))
 
-with tab4:
+with tab6:
     st.subheader("📊 成长数据")
     fig = growth_curve()
     if fig:
@@ -175,7 +376,7 @@ with tab4:
     else:
         st.info("样本不足 3 天，继续积累")
 
-with tab5:
+with tab7:
     st.subheader("📋 每日任务")
     done_today = qs.daily_done_today()
     for q in DAILY_QUESTS:
@@ -187,7 +388,7 @@ with tab5:
         done = any(k.startswith(week_key_prefix) and k.endswith(":" + q["id"]) for k in week_done)
         st.write("{} **{}**：{}".format("✅" if done else "⬜", q["name"], q["desc"]))
 
-with tab6:
+with tab8:
     st.subheader("🏅 已解锁徽章")
     unlocked = ach.summary()
     if not unlocked:
@@ -202,7 +403,7 @@ with tab6:
             st.write("🔒 **{}**：{}".format(a["name"], a["desc"]))
 
 
-with tab7:
+with tab9:
     st.subheader("👥 匿名同行榜（隐私优先）")
     st.caption("无服务器 · 匿名 ID · 数据全在本地 · 随时可删")
     pb = PeerBoard()
@@ -270,7 +471,7 @@ with tab7:
         st.caption("🟢 正数 = 同行领先你 | 🔴 负数 = 你领先同行 | 关卡 = 36 关总数，世界 = 9 世界总数")
 
 
-with tab8:
+with tab10:
     st.subheader("✅ 每日修行测试（20 题客观打分）")
     from datetime import date as _date
     today = str(_date.today())
@@ -333,7 +534,7 @@ with tab8:
                     st.success("🏅 新成就解锁: " + ", ".join("「{}」".format(a["name"]) for a in new_ach))
 
 
-with tab9:
+with tab11:
     st.subheader("🧠 客观知识测试（标准答案，骗不了自己）")
     ks = KnowledgeSystem()
     unlock = max_level_for_xp(char.xp)
@@ -407,7 +608,7 @@ with tab9:
         st.info("暂无错题——继续保持！")
 
 
-with tab10:
+with tab4:
     st.subheader("🎮 学习关卡：把书变成游戏，把市场变成教材")
     prog = Progress()
 
@@ -584,8 +785,8 @@ with tab10:
                 if sum(ok_list) >= 2:
                     prog.complete(lid_, sum(ok_list), attempts=1)
                     if not review:
-                        # 首通奖励
-                        char.xp += lvl["xp"]
+                        # 首通奖励（新手期双倍）
+                        got = char.gain_xp(lvl["xp"])
                         char.dims[lvl["dim"]] = min(100, char.dims[lvl["dim"]] + 5)
                         char.save()
                         best_ = Bestiary()
@@ -593,29 +794,30 @@ with tab10:
                             best_.unlocked.append(lvl["figure"])
                             best_.save()
                         st.balloons()
-                        st.success("🎉 关卡通关！+{} XP | 维度 {} +5 | 图鉴「{}」点亮".format(
-                            lvl["xp"], lvl["dim"], lvl["figure"]))
+                        st.success("🎉 关卡通关！+{} XP{} | 维度 {} +5 | 图鉴「{}」点亮".format(
+                            got, "（新手双倍）" if got != lvl["xp"] else "", lvl["dim"], lvl["figure"]))
                         _check_level_achievements(prog, char)
                     elif boss_revive:
                         if prog.boss_revive_done_this_week(lid_):
                             st.info("本周已复战过这个 BOSS（每周限一次）——下周再来")
                         else:
                             prog.mark_boss_revive(lid_)
-                            char.xp += 5
-                            char.save()
+                            got = char.gain_xp(5)
                             wk_xp = qs.complete_weekly("boss_revive", char)
                             st.balloons()
-                            st.success("🎉 BOSS 复战成功！+5 XP | 周任务「BOSS 复战」+{} XP".format(wk_xp))
+                            st.success("🎉 BOSS 复战成功！+{} XP{} | 周任务「BOSS 复战」+{} XP".format(
+                                got, "（新手双倍）" if got != 5 else "", wk_xp))
                     else:
                         if prog.reviewed_today(lid_):
                             st.info("今日已复习过本关（每日每关限一次）——明天再来")
                         else:
                             prog.mark_reviewed(lid_)
-                            char.xp += 5
+                            got = char.gain_xp(5)
                             char.dims[lvl["dim"]] = min(100, char.dims[lvl["dim"]] + 1)
                             char.save()
                             st.balloons()
-                            st.success("🎉 复习完成！+5 XP | 维度 {} +1".format(lvl["dim"]))
+                            st.success("🎉 复习完成！+{} XP{} | 维度 {} +1".format(
+                                got, "（新手双倍）" if got != 5 else "", lvl["dim"]))
                 else:
                     st.warning("测验未通过（{}/3）——重新读知识卡再试".format(sum(ok_list)))
 
@@ -653,7 +855,7 @@ with tab10:
             _render_level(pick, LEVELS[pick], review=True, boss_revive=True)
 
 
-with tab11:
+with tab12:
     st.subheader("📅 修行周报（每周自动汇总）")
     wr = WeeklyReport()
     cur = wr.build(char)
