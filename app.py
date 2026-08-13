@@ -100,7 +100,22 @@ with tab1:
     cr = ChallengeRecord()
     if char.is_newbie():
         st.info("🌱 新手上路期（首次打卡 7 天内）：所有 XP 双倍！")
-    if cr.done_today():
+    if q["answer"] is None:
+        st.warning("📡 " + q["text"])
+        st.caption(q["evidence"])
+        if st.button("📥 立即更新行情数据（akshare）", key="fetch_from_home"):
+            import subprocess as _sp
+            root = os.path.dirname(os.path.abspath(__file__))
+            with st.spinner("正在从 akshare 拉取 9 只资产日线……"):
+                try:
+                    _sp.run([sys.executable, os.path.join(root, "scripts", "update_data.py"),
+                             "--source", "akshare"], capture_output=True, text=True,
+                            timeout=300, cwd=root)
+                    st.success("✅ 数据就绪！刷新页面即可开始今日一题")
+                    st.rerun()
+                except Exception as e:
+                    st.error("更新失败: {}".format(str(e)[:200]))
+    elif cr.done_today():
         st.success("今日已答对（+3 XP 已入账）——明天 0 点换新题，答案随行情变")
     else:
         st.markdown("**Q · [{}]** {}".format(q["label"], q["text"]))
@@ -344,7 +359,7 @@ with tab2:
         st.markdown("### 🧪 实战任务")
         ans_true, info = solve_task(lvl["task"]["type"], lvl["task"].get("args", {}))
         if ans_true is None:
-            st.error("{}——先运行 python scripts/update_data.py".format(info))
+            st.error("{}——请到「🎯 操作台」点击「更新行情数据（akshare）」按钮（约 1 分钟）".format(info))
             return
         st.markdown(lvl["task"]["text"].format(**info))
         st.caption("提示: " + lvl["task"].get("hint", ""))

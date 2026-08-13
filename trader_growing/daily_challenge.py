@@ -132,10 +132,19 @@ def today_type():
 
 
 def today_question():
-    tid, label, fn = today_type()
-    text, hint, answer, evidence = fn()
-    return {"type": tid, "label": label, "text": text, "hint": hint,
-            "answer": answer, "evidence": evidence}
+    """今日一题；数据缺失/异常时返回占位题（引导去更新数据），绝不崩溃"""
+    try:
+        tid, label, fn = today_type()
+        text, hint, answer, evidence = fn()
+        if answer is None:
+            raise ValueError("无数据")
+        return {"type": tid, "label": label, "text": text, "hint": hint,
+                "answer": answer, "evidence": evidence}
+    except Exception:
+        return {"type": "no_data", "label": "数据未就绪",
+                "text": "今日一题需要最新行情数据——请到「🎯 操作台」点击「更新行情数据」按钮（约 1 分钟）。",
+                "hint": "", "answer": None,
+                "evidence": "数据就绪后，题目会用真实行情自动生成——每天答案都不同。"}
 
 
 # ------------------------------------------------------------ 作答记录
