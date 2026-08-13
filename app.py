@@ -33,8 +33,8 @@ from trader_growing.questions import (QUESTIONS, DIM_NAMES, DIM_EMOJI, SCALE,
     dim_score, overall_score, grade, red_flags_from_answers,
     questions_for, max_level_for_xp, level_badges)
 
-plt.rcParams["font.sans-serif"] = ["Arial Unicode MS", "SimHei", "STHeiti"]
-plt.rcParams["axes.unicode_minus"] = False
+from trader_growing.fonts import setup as _font_setup
+_font_setup()
 
 st.set_page_config(page_title="Trader-growing", page_icon="🌱", layout="wide")
 

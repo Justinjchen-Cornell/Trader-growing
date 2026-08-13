@@ -179,8 +179,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-plt.rcParams["font.sans-serif"] = ["Arial Unicode MS", "SimHei", "STHeiti"]
-plt.rcParams["axes.unicode_minus"] = False
+from trader_growing.fonts import setup as _font_setup
+_font_setup()
 
 import textwrap
 

@@ -8,8 +8,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.rcParams["font.sans-serif"] = ["Arial Unicode MS", "SimHei", "STHeiti"]
-plt.rcParams["axes.unicode_minus"] = False
+from trader_growing.fonts import setup as _font_setup
+_font_setup()
 
 from trader_growing.dashboard import (load_latest, pair_corr, annualized_vol,
                                       max_drawdown, yearly_returns)
