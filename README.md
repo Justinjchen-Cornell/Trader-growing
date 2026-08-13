@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.2.0-blue" alt="version">
+  <a href="https://trader-growing.streamlit.app" target="_blank">
+  <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="在线体验 Streamlit">
+</a>
+<img src="https://img.shields.io/badge/version-3.2.0-blue" alt="version">
   <img src="https://img.shields.io/badge/python-3.10%2B-green" alt="python">
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="license">
   <img src="https://img.shields.io/badge/platform-local--first-orange" alt="local-first">
@@ -131,6 +134,14 @@
 - 🏅 **四维开花**：四个维度同时 ≥ 70——不允许偏科
 - 🏅 **新手村毕业**：通关第 1 章世界全部关卡——量化入门第一步
 - 🏅 **世界征服者**：通关全部 9 个世界 36 关——这本书，你真的学完了
+
+---
+
+## ☁️ 在线体验（无需安装）
+
+> **https://trader-growing.streamlit.app** —— 浏览器直接打开即用。
+> 云端首次打开点首页「📥 更新行情数据」按钮（约 1 分钟），之后 36 关/实验场/今日一题全部可用。
+> 云端为演示环境（数据会话级）；自己长期使用推荐本地版（数据全在本地）。
 
 ---
 

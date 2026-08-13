@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.2.0-blue" alt="version">
+  <a href="https://trader-growing.streamlit.app" target="_blank">
+  <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Try it on Streamlit">
+</a>
+<img src="https://img.shields.io/badge/version-3.2.0-blue" alt="version">
   <img src="https://img.shields.io/badge/python-3.10%2B-green" alt="python">
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="license">
   <img src="https://img.shields.io/badge/platform-local--first-orange" alt="local-first">
@@ -111,6 +114,15 @@ hypothesis tests, factor IC (Spearman), and more. Completing a chapter unlocks t
 - 🏅 **Loss Cutter**: execute stop-loss 10 times — turn the hardest "admitting a mistake" into something worth showing off
 - 🏅 **Cash Master**: honor "being in cash is also a position" for 30 days — doing nothing is also cultivation
 - 🏅 **Four-Bloom**: all four attributes ≥ 70 — no lopsided growth allowed
+
+---
+
+## ☁️ Try It Online (no install)
+
+> **https://trader-growing.streamlit.app** — open in your browser directly.
+> On first visit, click the "📥 更新行情数据" button on the home page (~1 min),
+> then all 36 levels / lab / daily challenge work.
+> Cloud is a demo environment (session-level data); for daily personal use, run locally.
 
 ---
 
