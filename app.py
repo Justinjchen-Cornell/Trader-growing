@@ -166,8 +166,42 @@ with tab1:
 
 
 with tab2:
-    st.subheader("🎮 学习关卡：把书变成游戏，把市场变成教材")
+    st.subheader("🎮 学习关卡：一步一步，把书里的实验变成自己的本事")
     prog = Progress()
+
+    # ---- 🎯 今日推荐（智能下一步） ----
+    _lid_next, _lvl_next = prog.next_level()
+    if _lvl_next is not None:
+        _ch = _lvl_next["chapter"]
+        _prev_ok = True
+        if _ch > 1:
+            _pd, _pt = prog.world_progress(_ch - 1)
+            _prev_ok = _pd >= _pt
+        if _prev_ok:
+            st.success("🎯 今日推荐：继续主线 → **W{} · {}**（{}，+{} XP）——"
+                       "先读知识卡，再做实战任务，最后答测验，通关解锁下一步。".format(
+                           _ch, _lvl_next["name"], WORLDS[_ch]["title"], _lvl_next["xp"]))
+        else:
+            _pd, _pt = prog.world_progress(_ch - 1)
+            st.warning("🔒 下一站 W{}「{}」需要先通关 W{} 的全部 {} 关——"
+                       "当前 {}/{}，继续推主线！".format(
+                           _ch, WORLDS[_ch]["name"], _ch - 1, WORLDS[_ch - 1]["name"], _pd, _pt))
+    elif prog.completed:
+        # 全部通关：推荐复习或 BOSS 复战
+        _boss_avail = [l for l in prog.completed if l.endswith("-BOSS")
+                       and not prog.boss_revive_done_this_week(l)]
+        if _boss_avail:
+            st.success("🎯 今日推荐：36 关全通！去 ⚔️ BOSS 复战——本周行情变了，"
+                       "重打「{}」拿 +30 XP。".format(LEVELS[_boss_avail[0]]["name"]))
+        else:
+            st.success("🎯 今日推荐：全通 + 本周复战已打——去「🔄 每日复习」温习，或玩实验场！")
+    else:
+        st.info("🎯 从 W1 第 1 关「定投播种」开始——15 分钟就能通关第一章。")
+
+    # ---- 总进度 ----
+    st.progress(len(prog.completed) / len(LEVELS))
+    st.caption("学习进度 {} / {} 关 · 通关一章解锁下一章 · 答错不可怕，看解析再答".format(
+        len(prog.completed), len(LEVELS)))
 
     # ---- 世界地图 ----
     cols = st.columns(9)
@@ -176,8 +210,7 @@ with tab2:
         with cols[i]:
             mark = "✅" if done_n == total_n else "🔒" if ch > 1 and done_n == 0 else "🌍"
             st.markdown("{} W{} {}".format(mark, ch, WORLDS[ch]["name"]))
-    st.caption("已通关 {} / {} 关 · 完成前一章全部关卡解锁下一章世界".format(
-        len(prog.completed), len(LEVELS)))
+    st.caption("✅ 已通关 · 🌍 进行中 · 🔒 未解锁")
 
     def _evidence(ttype, info):
         """答后展示真实数据依据"""
@@ -281,6 +314,18 @@ with tab2:
             lvl["dim"], WORLDS[ch]["title"]))
         st.progress(prog.world_progress(ch)[0] / prog.world_progress(ch)[1])
 
+        # ---- 三步指示器：① 读卡 → ② 任务 → ③ 测验 ----
+        _step_key = "step_" + lid_
+        _cur_step = st.session_state.get(_step_key, 1)
+        _task_ok = bool(st.session_state.get("task_done_" + lid_))
+        if _task_ok and _cur_step < 2:
+            _cur_step = 2
+        _steps = ["① 读知识卡", "② 做实战任务", "③ 答测验通关"]
+        _marks = ["✅" if i < _cur_step else ("➡️" if i == _cur_step - 1 else "⬜")
+                  for i in range(3)]
+        st.markdown("　".join("{} {}".format(m, s) for m, s in zip(_marks, _steps)))
+        st.session_state[_step_key] = _cur_step
+
         with st.expander("📖 知识卡（先学）", expanded=True):
             st.markdown(lvl["knowledge"])
             # 真实数据配图（概念有图可看）
@@ -317,6 +362,7 @@ with tab2:
                     st.stop()
                 if val == ans_true:
                     st.session_state[task_key] = True
+                    st.session_state["step_" + lid_] = 2
                     st.success("✅ 任务正确！真实答案就是 {}{}".format(ans_true, _evidence(lvl["task"]["type"], info)))
                 else:
                     st.session_state[task_key] = False
@@ -648,13 +694,21 @@ with tab4:
 
 with tab5:
     st.subheader("🧪 实验场：真实数据回测沙盒（书里实验的可玩版）")
-    from trader_growing.backtest import run as run_bt, STRATEGIES as _BTS, ASSETS as _BASSETS
+    from trader_growing.backtest import run as run_bt, STRATEGIES as _BTS, ASSETS as _BASSETS, STRATEGY_GUIDES as _GUIDES
     _sid = st.selectbox("策略模板（9 种：5 原创 + 4 移植自经典量化库）", [s[0] for s in _BTS],
                         format_func=lambda x: next(s[1] for s in _BTS if s[0] == x))
     _default = next(s[2] for s in _BTS if s[0] == _sid)
     _spec = next(s[4] for s in _BTS if s[0] == _sid)
     _syms = st.multiselect("资产池", list(_BASSETS.keys()), default=_default,
                            format_func=lambda x: _BASSETS[x])
+    # ---- 策略系列课：知识卡 ----
+    _g = _GUIDES.get(_sid)
+    if _g:
+        with st.expander("📖 策略课：这是什么策略（学完再跑）", expanded=True):
+            st.markdown("**{}**".format(_g["desc"]))
+            st.markdown("- **逻辑**：" + _g["logic"])
+            st.markdown("- **怎么调参**：" + _g["params"])
+            st.markdown("- **何时失效**：⚠️ " + _g["weakness"])
     # 按策略参数规格动态渲染滑块
     _params = {}
     if _spec:
