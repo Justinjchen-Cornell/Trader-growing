@@ -227,6 +227,180 @@ def backtest_dual_thrust(sym="510300.SS", lookback=10, k=0.5, cost=0.0005):
     return equity, bench, {"回看": int(lookback), "K": k, "单边成本": cost}
 
 
+def backtest_awesome(sym="510300.SS", fast=5, slow=34, cost=0.0005):
+    """神奇振荡器（Awesome Oscillator）：EMA 双均线 + AO 双均线（中价 5/34）双确认"""
+    df = _ohlcv(sym)
+    if df is None or len(df) < int(slow) * 2:
+        return None
+    med = (df["high"] + df["low"]) / 2
+    ema_f = df["close"].ewm(span=int(fast)).mean()
+    ema_s = df["close"].ewm(span=int(slow)).mean()
+    ao_f = med.rolling(int(fast)).mean()
+    ao_s = med.rolling(int(slow)).mean()
+    pos = ((ema_f >= ema_s) & (ao_f >= ao_s)).astype(float)
+    pos = pos.shift(1).fillna(0)
+    r = df["close"].pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = df["close"] / float(df["close"].iloc[0])
+    return equity, bench, {"快线": int(fast), "慢线": int(slow), "单边成本": cost}
+
+
+def backtest_heikin_ashi(sym="510300.SS", cost=0.0005):
+    """Heikin-Ashi 趋势蜡烛：HA 四条件进场 / 三条件出场（忠实移植源仓库逻辑）"""
+    df = _ohlcv(sym)
+    if df is None or len(df) < 20:
+        return None
+    ha_c = (df["open"] + df["close"] + df["high"] + df["low"]) / 4
+    ha_o = ha_c.copy()
+    ha_o.iloc[0] = df["open"].iloc[0]
+    for i in range(1, len(df)):
+        ha_o.iloc[i] = (ha_o.iloc[i - 1] + ha_c.iloc[i - 1]) / 2
+    combo = pd.concat([ha_o, ha_c, df["high"], df["low"]], axis=1)
+    ha_h = combo.max(axis=1)
+    ha_l = combo.min(axis=1)
+    body = (ha_o - ha_c).abs()
+    entry = ((ha_o > ha_c) & np.isclose(ha_o, ha_h) &
+             (body > body.shift(1)) & (ha_o.shift(1) > ha_c.shift(1)))
+    ex = ((ha_o < ha_c) & np.isclose(ha_o, ha_l) & (ha_o.shift(1) < ha_c.shift(1)))
+    pos = pd.Series(np.nan, index=df.index)
+    pos[entry] = 1.0
+    pos[ex] = 0.0
+    pos = pos.ffill().fillna(0).shift(1).fillna(0)
+    r = df["close"].pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = df["close"] / float(df["close"].iloc[0])
+    return equity, bench, {"进场次数": int(entry.sum()), "单边成本": cost}
+
+
+def backtest_london_breakout(sym="510300.SS", lookback=5, cost=0.0005):
+    """伦敦突破（日线版）：开盘 ± 前 N 日平均振幅，突破追入"""
+    df = _ohlcv(sym)
+    if df is None or len(df) < int(lookback) + 5:
+        return None
+    rng = (df["high"] - df["low"]).rolling(int(lookback)).mean().shift(1)
+    upper = df["open"] + rng
+    lower = df["open"] - rng
+    pos = pd.Series(np.nan, index=df.index)
+    pos[df["close"] > upper] = 1.0
+    pos[df["close"] < lower] = 0.0
+    pos = pos.ffill().fillna(0).shift(1).fillna(0)
+    r = df["close"].pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = df["close"] / float(df["close"].iloc[0])
+    return equity, bench, {"区间回看": int(lookback), "单边成本": cost}
+
+
+def backtest_sar(sym="510300.SS", af_start=0.02, af_step=0.02, af_max=0.2, cost=0.0005):
+    """抛物线 SAR：Wilder 加速因子（0.02 起步，每创新高 +0.02，上限 0.2）趋势跟踪"""
+    df = _ohlcv(sym)
+    if df is None or len(df) < 10:
+        return None
+    high, low, close = df["high"].values, df["low"].values, df["close"].values
+    n = len(df)
+    sar = np.zeros(n)
+    ep = np.zeros(n)
+    af = np.zeros(n)
+    trend = np.zeros(n)
+    trend[0] = 1
+    sar[0] = low[0]
+    ep[0] = high[0]
+    af[0] = af_start
+    for i in range(1, n):
+        sar[i] = sar[i - 1] + af[i - 1] * (ep[i - 1] - sar[i - 1])
+        if trend[i - 1] > 0:
+            if i >= 2:
+                sar[i] = min(sar[i], low[i - 1], low[i - 2])
+            if high[i] > ep[i - 1]:
+                ep[i], af[i] = high[i], min(af[i - 1] + af_step, af_max)
+            else:
+                ep[i], af[i] = ep[i - 1], af[i - 1]
+            if low[i] < sar[i]:
+                trend[i] = -1
+                sar[i] = ep[i - 1]
+                ep[i], af[i] = low[i], af_start
+            else:
+                trend[i] = 1
+        else:
+            if i >= 2:
+                sar[i] = max(sar[i], high[i - 1], high[i - 2])
+            if low[i] < ep[i - 1]:
+                ep[i], af[i] = low[i], min(af[i - 1] + af_step, af_max)
+            else:
+                ep[i], af[i] = ep[i - 1], af[i - 1]
+            if high[i] > sar[i]:
+                trend[i] = 1
+                sar[i] = ep[i - 1]
+                ep[i], af[i] = high[i], af_start
+            else:
+                trend[i] = -1
+    pos = pd.Series((trend > 0).astype(float), index=df.index).shift(1).fillna(0)
+    r = df["close"].pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = df["close"] / float(df["close"].iloc[0])
+    return equity, bench, {"加速因子": "{}/{}（上限 {}）".format(af_start, af_step, af_max), "单边成本": cost}
+
+
+def backtest_shooting_star(sym="510300.SS", ratio=2.0, cost=0.0005):
+    """射击之星：上影线 ≥ ratio×实体 → 反转离场，突破星形高点后恢复持仓"""
+    df = _ohlcv(sym)
+    if df is None or len(df) < 10:
+        return None
+    body = (df["close"] - df["open"]).abs()
+    upper_wick = df["high"] - np.maximum(df["open"], df["close"])
+    star = (upper_wick >= ratio * body) & (body > 0)
+    exit_high = df["high"].where(star).ffill()
+    pos = ((~star) | (df["close"] > exit_high)).astype(float)
+    pos[star] = 0.0
+    pos = pos.shift(1).fillna(1.0)
+    r = df["close"].pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = df["close"] / float(df["close"].iloc[0])
+    return equity, bench, {"上影/实体比": ratio, "星形次数": int(star.sum()), "单边成本": cost}
+
+
+def backtest_pair(a="510300.SS", b="513100.SS", window=60, entry_z=2.0, exit_z=0.0, cost=0.0005):
+    """配对交易（简化版）：滚动 β 构建价差 + z 分数均值回归，含做空对冲（纸面回测）
+    源仓库用 Engle-Granger 协整检验；这里用滚动回归近似，教学为主"""
+    df = _aligned([a, b])
+    if df is None or len(df) < int(window) + 10:
+        return None
+    ra = df[a].pct_change()
+    rb = df[b].pct_change()
+    beta = ra.rolling(int(window)).cov(rb) / rb.rolling(int(window)).var()
+    spread = df[a] - beta * df[b]
+    mu = spread.rolling(int(window)).mean()
+    sd = spread.rolling(int(window)).std().replace(0, np.nan)
+    z = (spread - mu) / sd
+    pos_a = pd.Series(np.nan, index=df.index)
+    pos_a[z < -entry_z] = 1.0
+    pos_a[z > entry_z] = -1.0
+    pos_a[z.abs() < exit_z] = 0.0
+    pos_a = pos_a.ffill().fillna(0).shift(1).fillna(0)
+    pos_b = -pos_a
+    strat = pos_a * ra.fillna(0) + pos_b * rb.fillna(0)
+    turnover = pos_a.diff().abs().fillna(pos_a.abs()) + pos_b.diff().abs().fillna(pos_b.abs())
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = (df / df.iloc[0]).mean(axis=1)
+    return equity, bench, {"回归窗口": int(window), "进场z": entry_z, "出场z": exit_z,
+                           "含做空对冲（纸面）": True, "单边成本": cost}
+
+
 def _ohlcv(sym):
     close = load_latest(sym)
     if close is None:
@@ -284,6 +458,22 @@ def run(strategy, syms=("510300.SS",), params=None, cost=0.0005):
         elif strategy == "dual_thrust":
             equity, bench, meta = backtest_dual_thrust(syms[0], lookback=p.get("lookback", 10),
                                                        k=p.get("k", 0.5), cost=cost)
+        elif strategy == "awesome":
+            equity, bench, meta = backtest_awesome(syms[0], fast=p.get("fast", 5),
+                                                   slow=p.get("slow", 34), cost=cost)
+        elif strategy == "heikin_ashi":
+            equity, bench, meta = backtest_heikin_ashi(syms[0], cost=cost)
+        elif strategy == "london_breakout":
+            equity, bench, meta = backtest_london_breakout(syms[0], lookback=p.get("lookback", 5), cost=cost)
+        elif strategy == "sar":
+            equity, bench, meta = backtest_sar(syms[0], af_start=0.02, af_step=0.02, af_max=0.2, cost=cost)
+        elif strategy == "shooting_star":
+            equity, bench, meta = backtest_shooting_star(syms[0], ratio=p.get("ratio", 2.0), cost=cost)
+        elif strategy == "pair_trading":
+            equity, bench, meta = backtest_pair(syms[0], syms[1] if len(syms) > 1 else "513100.SS",
+                                                window=p.get("window", 60),
+                                                entry_z=p.get("entry_z", 2.0),
+                                                exit_z=p.get("exit_z", 0.0), cost=cost)
         elif strategy == "equal_weight":
             equity, bench, meta = backtest_combo(list(syms), _w_equal, cost=cost)
         elif strategy == "risk_parity":
@@ -333,4 +523,15 @@ STRATEGIES = [
     ("risk_parity", "风险平价（1/波动加权）", ["510300.SS", "513100.SS", "518880.SS"], "组合", {}),
     ("momentum", "动量轮动（每月持最强）", ["510300.SS", "513100.SS", "518880.SS", "501018.SS"], "组合",
      {"window": ("动量回看", "int", 5, 120, 20)}),
+    ("awesome", "神奇振荡器（EMA+AO 双确认）", ["510300.SS"], "单资产",
+     {"fast": ("快线", "int", 5, 60, 5), "slow": ("慢线", "int", 10, 120, 34)}),
+    ("heikin_ashi", "Heikin-Ashi 趋势蜡烛", ["510300.SS"], "单资产", {}),
+    ("london_breakout", "伦敦突破（开盘区间突破）", ["510300.SS"], "单资产",
+     {"lookback": ("区间回看", "int", 1, 20, 5)}),
+    ("sar", "抛物线 SAR（趋势跟踪）", ["510300.SS"], "单资产", {}),
+    ("shooting_star", "射击之星（反转出场）", ["510300.SS"], "单资产",
+     {"ratio": ("上影/实体比", "float", 1.0, 4.0, 2.0)}),
+    ("pair_trading", "配对交易（滚动β z分数）", ["510300.SS", "513100.SS"], "配对",
+     {"window": ("回归窗口", "int", 20, 120, 60),
+      "entry_z": ("进场 z 阈值", "float", 1.0, 3.0, 2.0)}),
 ]
