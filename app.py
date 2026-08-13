@@ -278,26 +278,32 @@ with tab2:
 with tab3:
     st.subheader("🧪 实验场：真实数据回测沙盒（书里实验的可玩版）")
     from trader_growing.backtest import run as run_bt, STRATEGIES as _BTS, ASSETS as _BASSETS
-    _sid = st.selectbox("策略模板", [s[0] for s in _BTS],
+    _sid = st.selectbox("策略模板（9 种：5 原创 + 4 移植自经典量化库）", [s[0] for s in _BTS],
                         format_func=lambda x: next(s[1] for s in _BTS if s[0] == x))
     _default = next(s[2] for s in _BTS if s[0] == _sid)
+    _spec = next(s[4] for s in _BTS if s[0] == _sid)
     _syms = st.multiselect("资产池", list(_BASSETS.keys()), default=_default,
                            format_func=lambda x: _BASSETS[x])
-    c1, c2, c3 = st.columns(3)
-    _win = c1.slider("参数窗口（MA/动量回看）", 5, 120, 20)
-    _cost = c2.slider("单边成本 %", 0.0, 0.5, 0.05) / 100.0
-    if _sid == "dca":
-        _monthly = int(c3.number_input("每月定投金额", 100, 100000, 1000, step=100))
-    else:
-        _monthly = 1000
-        c3.caption("组合策略每月再平衡")
+    # 按策略参数规格动态渲染滑块
+    _params = {}
+    if _spec:
+        cols = st.columns(min(3, len(_spec)))
+        for i, (pk, (plabel, ptype, pmin, pmax, pdef)) in enumerate(_spec.items()):
+            with cols[i % len(cols)]:
+                if ptype == "int":
+                    _params[pk] = st.slider(plabel, int(pmin), int(pmax), int(pdef))
+                else:
+                    _params[pk] = st.slider(plabel, float(pmin), float(pmax), float(pdef), step=0.1)
+    c1, c2 = st.columns(2)
+    _cost = c1.slider("单边成本 %", 0.0, 0.5, 0.05) / 100.0
+    c2.caption("组合策略每月再平衡 · 参数默认值即经典配置")
     st.caption("指标对比 = 策略 vs 基准（买入持有）。回测是'背答案'的第一现场——漂亮的结果要先怀疑（第 6 章）。")
     if st.button("🚀 跑回测（真实数据）", type="primary", use_container_width=True):
         if not _syms:
             st.error("请至少选择一只资产")
         else:
             with st.spinner("回测中……"):
-                res = run_bt(_sid, syms=tuple(_syms), window=int(_win), cost=_cost, monthly=_monthly)
+                res = run_bt(_sid, syms=tuple(_syms), params=_params, cost=_cost)
             if res is None:
                 st.error("数据不足——先运行 python scripts/update_data.py --source akshare")
             else:

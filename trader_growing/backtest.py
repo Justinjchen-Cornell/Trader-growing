@@ -10,6 +10,8 @@
 
 输出：净值曲线（策略 vs 基准）+ 指标（总收益/年化/波动/夏普/最大回撤/卡玛）
 """
+import os
+
 import numpy as np
 import pandas as pd
 
@@ -134,6 +136,115 @@ def _w_risk_parity(hist, r):
     return inv
 
 
+def backtest_macd(sym="510300.SS", fast=12, slow=26, cost=0.0005):
+    """MACD 金叉：快线 MA 上穿慢线 MA 持多，下穿空仓（忠实移植 je-suis-tm/quant-trading）"""
+    close = load_latest(sym)
+    if close is None or len(close) < slow + 5:
+        return None
+    ma_f = close.rolling(int(fast)).mean()
+    ma_s = close.rolling(int(slow)).mean()
+    pos = (ma_f >= ma_s).astype(float).fillna(0)
+    pos = pos.shift(1).fillna(0)
+    r = close.pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = close / float(close.iloc[0])
+    return equity, bench, {"快线": int(fast), "慢线": int(slow), "单边成本": cost}
+
+
+def backtest_rsi(sym="510300.SS", window=14, oversold=30, overbought=70, cost=0.0005):
+    """RSI 超买超卖：RSI < 超卖线买入，> 超买线卖出（Wilder RSI，低吸高抛）"""
+    close = load_latest(sym)
+    if close is None or len(close) < int(window) * 3:
+        return None
+    delta = close.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1.0 / int(window), min_periods=int(window)).mean()
+    avg_loss = loss.ewm(alpha=1.0 / int(window), min_periods=int(window)).mean()
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rsi = 100 - 100 / (1 + rs)
+    pos = pd.Series(np.nan, index=close.index)
+    pos[rsi < oversold] = 1.0
+    pos[rsi > overbought] = 0.0
+    pos = pos.ffill().fillna(0).shift(1).fillna(0)
+    r = close.pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = close / float(close.iloc[0])
+    return equity, bench, {"RSI 周期": int(window), "超买/超卖": "{}/{}".format(int(overbought), int(oversold)),
+                           "单边成本": cost}
+
+
+def backtest_bollinger(sym="510300.SS", window=20, n_std=2.0, cost=0.0005):
+    """布林带均值回归：触下轨买入（低吸），触上轨卖出（高抛）"""
+    close = load_latest(sym)
+    if close is None or len(close) < int(window) * 2:
+        return None
+    mid = close.rolling(int(window)).mean()
+    std = close.rolling(int(window)).std()
+    upper = mid + n_std * std
+    lower = mid - n_std * std
+    pos = pd.Series(np.nan, index=close.index)
+    pos[close < lower] = 1.0
+    pos[close > upper] = 0.0
+    pos = pos.ffill().fillna(0).shift(1).fillna(0)
+    r = close.pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = close / float(close.iloc[0])
+    return equity, bench, {"窗口": int(window), "标准差": n_std, "单边成本": cost}
+
+
+def backtest_dual_thrust(sym="510300.SS", lookback=10, k=0.5, cost=0.0005):
+    """双推力突破（日线版）：开盘 ± K×区间(近 N 日 HH/LC/HC/LL)，突破追入，反向离场"""
+    df = _ohlcv(sym)
+    if df is None or len(df) < int(lookback) + 5:
+        return None
+    hh = df["high"].rolling(int(lookback)).max()
+    lc = df["low"].rolling(int(lookback)).min()
+    hc = df["close"].rolling(int(lookback)).max()
+    ll = df["low"].rolling(int(lookback)).min()
+    rng = np.maximum(hh - lc, hc - ll)
+    upper = df["open"] + k * rng.shift(1)
+    lower = df["open"] - (1 - k) * rng.shift(1)
+    pos = pd.Series(np.nan, index=df.index)
+    pos[df["close"] > upper] = 1.0
+    pos[df["close"] < lower] = 0.0
+    pos = pos.ffill().fillna(0).shift(1).fillna(0)
+    r = df["close"].pct_change().fillna(0)
+    strat = pos * r
+    turnover = pos.diff().abs().fillna(pos)
+    strat = strat - turnover * cost
+    equity = (1 + strat).cumprod()
+    bench = df["close"] / float(df["close"].iloc[0])
+    return equity, bench, {"回看": int(lookback), "K": k, "单边成本": cost}
+
+
+def _ohlcv(sym):
+    close = load_latest(sym)
+    if close is None:
+        return None
+    df = close.to_frame(name="close")
+    p = os.path.join(os.path.expanduser("~"), ".oxq", "data", "market", sym + ".parquet")
+    if os.path.exists(p):
+        import pandas as _pd
+        raw = _pd.read_parquet(p)
+        for col in ["open", "high", "low"]:
+            if col in raw.columns:
+                df[col] = raw[col].reindex(close.index)
+    for col in ["open", "high", "low"]:
+        if col not in df.columns:
+            df[col] = close
+    return df
+
+
 def _w_momentum(hist, r, lookback=20):
     mom = hist.iloc[-1] / hist.iloc[-min(lookback, len(hist))] - 1
     w = pd.Series(0.0, index=hist.columns)
@@ -141,20 +252,45 @@ def _w_momentum(hist, r, lookback=20):
     return w
 
 
-def run(strategy, syms=("510300.SS",), window=20, cost=0.0005, monthly=1000):
-    """统一入口：返回 dict(equity, bench, metrics, meta) 或 None(数据不足)"""
+def _default_params(strategy):
+    spec = next(s[4] for s in STRATEGIES if s[0] == strategy)
+    out = {}
+    for k, v in spec.items():
+        out[k] = v[4]  # default
+    return out
+
+
+def run(strategy, syms=("510300.SS",), params=None, cost=0.0005):
+    """统一入口：返回 dict(equity, bench, metrics, meta) 或 None(数据不足)
+    params: 策略参数 dict（缺省用默认值）"""
+    p = _default_params(strategy)
+    if params:
+        p.update({k: v for k, v in params.items() if v is not None})
     try:
         if strategy == "dca":
-            equity, bench, meta = backtest_dca(syms[0], monthly=monthly)
+            equity, bench, meta = backtest_dca(syms[0], monthly=int(p.get("monthly", 1000)))
         elif strategy == "ma_timing":
-            equity, bench, meta = backtest_ma(syms[0], window=int(window), cost=cost)
+            equity, bench, meta = backtest_ma(syms[0], window=int(p.get("window", 20)), cost=cost)
+        elif strategy == "macd":
+            equity, bench, meta = backtest_macd(syms[0], fast=p.get("fast", 12),
+                                                slow=p.get("slow", 26), cost=cost)
+        elif strategy == "rsi":
+            equity, bench, meta = backtest_rsi(syms[0], window=p.get("window", 14),
+                                               oversold=p.get("oversold", 30),
+                                               overbought=p.get("overbought", 70), cost=cost)
+        elif strategy == "bollinger":
+            equity, bench, meta = backtest_bollinger(syms[0], window=p.get("window", 20),
+                                                     n_std=p.get("n_std", 2.0), cost=cost)
+        elif strategy == "dual_thrust":
+            equity, bench, meta = backtest_dual_thrust(syms[0], lookback=p.get("lookback", 10),
+                                                       k=p.get("k", 0.5), cost=cost)
         elif strategy == "equal_weight":
             equity, bench, meta = backtest_combo(list(syms), _w_equal, cost=cost)
         elif strategy == "risk_parity":
             equity, bench, meta = backtest_combo(list(syms), _w_risk_parity, cost=cost)
         elif strategy == "momentum":
             equity, bench, meta = backtest_combo(
-                list(syms), lambda h, r: _w_momentum(h, r, int(window)), cost=cost)
+                list(syms), lambda h, r: _w_momentum(h, r, int(p.get("window", 20))), cost=cost)
         else:
             return None
         if equity is None or len(equity) < 30:
@@ -175,10 +311,26 @@ def run(strategy, syms=("510300.SS",), window=20, cost=0.0005, monthly=1000):
         return None
 
 
+# 参数规格: (标签, 类型, min, max, 默认)
 STRATEGIES = [
-    ("dca", "定投（每月固定金额）", ["510300.SS"], "单资产"),
-    ("ma_timing", "均线择时（价格 vs MA）", ["510300.SS"], "单资产"),
-    ("equal_weight", "等权组合（每月再平衡）", ["510300.SS", "513100.SS", "518880.SS"], "组合"),
-    ("risk_parity", "风险平价（1/波动加权）", ["510300.SS", "513100.SS", "518880.SS"], "组合"),
-    ("momentum", "动量轮动（每月持最强）", ["510300.SS", "513100.SS", "518880.SS", "501018.SS"], "组合"),
+    ("dca", "定投（每月固定金额）", ["510300.SS"], "单资产",
+     {"monthly": ("每月金额", "int", 100, 100000, 1000)}),
+    ("ma_timing", "均线择时（价格 vs MA）", ["510300.SS"], "单资产",
+     {"window": ("MA 窗口", "int", 5, 120, 20)}),
+    ("macd", "MACD 金叉（快线上穿慢线）", ["510300.SS"], "单资产",
+     {"fast": ("快线周期", "int", 5, 60, 12), "slow": ("慢线周期", "int", 10, 120, 26)}),
+    ("rsi", "RSI 超买超卖（低吸高抛）", ["510300.SS"], "单资产",
+     {"window": ("RSI 周期", "int", 5, 60, 14),
+      "oversold": ("超卖线（买入）", "int", 5, 40, 30),
+      "overbought": ("超买线（卖出）", "int", 60, 95, 70)}),
+    ("bollinger", "布林带均值回归（触轨低吸高抛）", ["510300.SS"], "单资产",
+     {"window": ("布林窗口", "int", 5, 120, 20),
+      "n_std": ("标准差倍数", "float", 1.0, 4.0, 2.0)}),
+    ("dual_thrust", "双推力突破（开盘 ±K×区间）", ["510300.SS"], "单资产",
+     {"lookback": ("突破回看", "int", 5, 60, 10),
+      "k": ("K 参数", "float", 0.1, 0.9, 0.5)}),
+    ("equal_weight", "等权组合（每月再平衡）", ["510300.SS", "513100.SS", "518880.SS"], "组合", {}),
+    ("risk_parity", "风险平价（1/波动加权）", ["510300.SS", "513100.SS", "518880.SS"], "组合", {}),
+    ("momentum", "动量轮动（每月持最强）", ["510300.SS", "513100.SS", "518880.SS", "501018.SS"], "组合",
+     {"window": ("动量回看", "int", 5, 120, 20)}),
 ]
