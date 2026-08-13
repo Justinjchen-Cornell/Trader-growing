@@ -81,6 +81,13 @@
 
 ---
 
+## 📸 界面速览
+
+| 🏠 今日（今日一题 + 分享卡片） | 🧪 实验场（真实数据回测） | 🎮 学习关卡（9 世界 36 关） |
+|:---:|:---:|:---:|
+| <img src="assets/screenshots/home.png" width="400"> | <img src="assets/screenshots/lab.png" width="400"> | <img src="assets/screenshots/levels.png" width="400"> |
+
+---
 ## 🏡 成长花园（Growing 的双关）
 
 "Growing"既是**成长**（等级提升），也是**种植**（培育花园）。你的花园里有四棵植物，对应四个维度，每天浇水（打卡）它们才会长大：

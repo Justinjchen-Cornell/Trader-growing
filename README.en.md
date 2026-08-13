@@ -63,6 +63,13 @@ hypothesis tests, factor IC (Spearman), and more. Completing a chapter unlocks t
 
 ---
 
+## 📸 Screenshots
+
+| 🏠 Today (daily challenge + share card) | 🧪 Lab (real-data backtest) | 🎮 Learning Levels (9 worlds / 36 levels) |
+|:---:|:---:|:---:|
+| <img src="assets/screenshots/home.png" width="400"> | <img src="assets/screenshots/lab.png" width="400"> | <img src="assets/screenshots/levels.png" width="400"> |
+
+---
 ## 🏡 The Garden (A Double Meaning of "Growing")
 
 "Growing" means both **leveling up** and **gardening**. Your garden has four plants, one per attribute. Water them daily (check in) and they grow:
