@@ -151,7 +151,7 @@ python scripts/demo.py
 python scripts/update_data.py --source akshare   # 免费免注册；有 Wind skill 时自动用 Wind
 
 # 5. 开始你的修行
-streamlit run app.py              # 🌐 Web 界面（推荐！12 个 tab：🏠今日（今日一题）/🎯操作台/🧪实验场/🎮学习关卡/图鉴/成长/任务/徽章/同行榜/每日测试/知识测试/📅周报）
+streamlit run app.py              # 🌐 Web 界面（推荐！7 个 tab：🏠今日 → 🎮学习 → 📝测试 → 🎯操作台 → 🧪实验场 → 📊我的 → 👥同行榜）
 python scripts/tg.py check        # 每日打卡（输入四维分数）
 python scripts/tg.py status       # 角色 / 花园 / 层级
 python scripts/tg.py dashboard    # 四资产看板（金/油/沪深300/纳指）
@@ -177,7 +177,7 @@ Demo 输出示例（有纪律偏差的那一天）：
 
 ```
 Trader-growing/
-├── app.py                    # 🌐 Web 界面（Streamlit，10 个 tab）
+├── app.py                    # 🌐 Web 界面（Streamlit，7 个 tab）
 ├── trader_growing/           # 核心包
 │   ├── character.py          # 等级 / XP / 连击 / 四维属性
 │   ├── achievements.py       # 成就徽章系统（13 枚）
