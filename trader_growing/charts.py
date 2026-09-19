@@ -207,6 +207,45 @@ def ic_scatter(syms=None):
     return fig
 
 
+def ef_weights():
+    """马克维茨最大夏普 vs 风险平价：权重对比（样本内 2016-2024）"""
+    import pandas as pd
+    from trader_growing.dashboard import common_close
+    syms = ["510300.SS", "513100.SS", "518880.SS", "501018.SS"]
+    names = ["沪深300", "纳指100", "黄金", "原油"]
+    cc = common_close(syms)
+    if not cc:
+        return None
+    df = pd.DataFrame(cc).dropna()
+    is_df = df.loc[:"2024-12-31"]
+    ret = is_df.pct_change().dropna()
+    if len(ret) < 250:
+        return None
+    mu = ret.mean().values * 252
+    cov = ret.cov().values * 252
+    n = 4
+    cons = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]
+    try:
+        from scipy.optimize import minimize
+        w_ef = minimize(lambda w: -(w @ mu) / np.sqrt(w @ cov @ w), np.ones(n) / n,
+                        method="SLSQP", bounds=[(0, 1)] * n, constraints=cons).x
+    except Exception:
+        return None
+    vol = ret.std()
+    w_rp = ((1 / vol) / (1 / vol).sum()).values
+    fig, ax = plt.subplots(figsize=(4.6, 3.2))
+    x = np.arange(n)
+    ax.bar(x - 0.18, w_ef * 100, width=0.36, color="#E63946", label="马克维茨最大夏普")
+    ax.bar(x + 0.18, w_rp * 100, width=0.36, color="#2A9D8F", label="风险平价")
+    ax.set_xticks(x)
+    ax.set_xticklabels(names)
+    ax.set_ylabel("权重 %")
+    ax.set_title("马克维茨 vs 风险平价：优化把赌注堆给了谁", fontsize=11)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    return fig
+
+
 CHART_FNS = {
     "corr_scatter": corr_scatter,
     "vol_weights": vol_weights,
@@ -216,4 +255,5 @@ CHART_FNS = {
     "in_out_bars": in_out_bars,
     "odd_even_bars": odd_even_bars,
     "ic_scatter": ic_scatter,
+    "ef_weights": ef_weights,
 }

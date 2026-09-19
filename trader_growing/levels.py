@@ -616,6 +616,29 @@ LEVELS = {'1-1': {'chapter': 1,
                    'ans': 0,
                    'exp': '真实案例：同样 5 年数据，两种切法一正一负——切法一变就翻脸。'}],
          'chart': 'odd_even_bars'},
+ '6-4': {'chapter': 6,
+         'name': '马克维茨翻车现场',
+         'dim': 'philosophy',
+         'xp': 15,
+         'figure': 'markowitz',
+         'knowledge': '马克维茨组合（有效前沿）= 用历史数据优化权重，找「夏普最高」的配置——相当于在「权重空间」里选参数。它样本内永远是学霸（权重就照着样本内答案优化）；但期望收益是最难估计的量，优化会把历史噪音当规律。学术经典（DeMiguel 2009）：由于估计误差，朴素方法（等权/风险平价）样本外经常反超「最优」。四资产实测（样本内 2016-2024 → 样本外 2025 起）：马克维茨把约七成仓位押给黄金（风险平价只给四成）；样本外风险调整后夏普 1.33 输给风险平价 1.63，回撤 -21% 近两倍。估计得越多，错得越多；「最优」两个字最危险。',
+         'task': {'type': 'ef_champion',
+                  'args': {},
+                  'text': '🧪 实战任务：四资产（沪深300/纳指100/黄金/原油）真实验证。在样本内（{is_start}~{is_end}）做「马克维茨最大夏普」优化，它会把最大的仓位分给哪个资产？（输入：1=沪深300，2=纳指100，3=黄金，4=原油）',
+                  'hint': '马克维茨按「期望收益 ÷ 协方差」打分——历史上的大赢家会被喂到最饱'},
+         'quiz': [{'q': '马克维茨有效前沿依赖哪个最难估计的输入？',
+                   'opts': ['股价', '期望收益', '成交量', '交易日'],
+                   'ans': 1,
+                   'exp': '期望收益是金融里最难估计的量——这是它脆弱的根源。'},
+                  {'q': '为什么朴素方法（等权/风险平价）样本外常常更好？',
+                   'opts': ['运气好', '不需要估计期望收益，绕开了最大的估计误差', '数学更复杂', '历史更长'],
+                   'ans': 1,
+                   'exp': 'DeMiguel 2009：估计误差的代价经常超过优化带来的好处。'},
+                  {'q': '「样本内最优 → 样本外光环消失」的本质是？',
+                   'opts': ['数据错误', '优化把历史噪音当规律——权重也会过拟合', '市场太强', '计算精度不够'],
+                   'ans': 1,
+                   'exp': '参数会过拟合，权重同样会——「最优」两个字永远要警惕。'}],
+         'chart': 'ef_weights'},
  '6-BOSS': {'chapter': 6,
             'name': '规则负担',
             'dim': 'philosophy',
@@ -1574,3 +1597,34 @@ def solve_task(ttype, args=None):
                        "mom_ranks": ", ".join("{}{}".format(r, names[i]) for i, r in sorted(mr.items(), key=lambda x: x[1])),
                        "ret_ranks": ", ".join("{}{}".format(r, names[i]) for i, r in sorted(rr.items(), key=lambda x: x[1])),
                        "agree": agree}
+
+    if ttype == "ef_champion":
+        """马克维茨最大夏普权重：argmax 资产（第6章 · 马克维茨翻车现场）"""
+        import pandas as _pd
+        syms = ["510300.SS", "513100.SS", "518880.SS", "501018.SS"]
+        names4 = {"510300.SS": "沪深300", "513100.SS": "纳指100", "518880.SS": "黄金", "501018.SS": "原油"}
+        cc = common_close(syms)
+        if not cc:
+            return None, "四资产数据缺失"
+        df = _pd.DataFrame(cc).dropna()
+        is_df = df.loc[:"2024-12-31"]
+        ret = is_df.pct_change().dropna()
+        if len(ret) < 250:
+            return None, "样本内数据不足"
+        mu = ret.mean().values * 252
+        cov = ret.cov().values * 252
+        n = len(syms)
+        cons = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]
+        try:
+            from scipy.optimize import minimize as _mini
+            r = _mini(lambda w: -(w @ mu) / np.sqrt(w @ cov @ w), np.ones(n) / n,
+                      method="SLSQP", bounds=[(0, 1)] * n, constraints=cons)
+            w_ef = r.x
+        except Exception:
+            return None, "优化失败"
+        k = int(np.argmax(w_ef))
+        vol = ret.std()
+        w_rp = (1 / vol) / (1 / vol).sum()
+        return k + 1, {"is_start": str(is_df.index[0].date()), "is_end": str(is_df.index[-1].date()),
+                       "name": names4[syms[k]], "w_ef": float(w_ef[k]),
+                       "w_rp": float(w_rp.iloc[k])}

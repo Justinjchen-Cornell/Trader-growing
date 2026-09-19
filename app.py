@@ -298,6 +298,8 @@ with tab2:
                 info["ret"] - info["cost"], **info)
         if "ret" in info and "dd" not in info:
             return "（近一年真实涨幅 {ret:+.1%}）".format(**info)
+        if "w_ef" in info:
+            return "（马克维茨把 {name} 分到 {w_ef:.0%}，风险平价只给 {w_rp:.0%}——这就是「集中押注」）".format(**info)
         return ""
 
     def _check_level_achievements(prog_, char_):

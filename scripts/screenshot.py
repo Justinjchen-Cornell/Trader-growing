@@ -36,7 +36,7 @@ def main():
         page.wait_for_timeout(6000)
         shot(page, "🏠 今日", "home.png")
         shot(page, "🧪 实验场", "lab.png")
-        shot(page, "🎮 学习关卡", "levels.png")
+        shot(page, "🎮 学习", "levels.png")
         browser.close()
     print("完成 ->", OUT)
 
